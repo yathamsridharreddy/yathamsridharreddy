@@ -56,6 +56,7 @@ commit.committer_email = _memail(commit.committer_email)
 commit.author_name = _mname(commit.author_name)
 commit.committer_name = _mname(commit.committer_name)
 
+# scrub AI co-author trailers
 lines = commit.message.split(b"\n")
 keep = []
 for l in lines:
@@ -64,6 +65,14 @@ for l in lines:
         continue
     keep.append(l)
 commit.message = b"\n".join(keep)
+
+# scrub "arena/xxxx" branch refs left in merge messages
+msg = commit.message
+if b"yathamsridharreddy/arena/" in msg or b"/arena/" in msg:
+    import re as _re
+    msg = _re.sub(br"yathamsridharreddy/arena/[A-Za-z0-9_-]+", b"main", msg)
+    msg = _re.sub(br"from yathamsridharreddy/arena/[A-Za-z0-9_-]+", b"from main", msg)
+    commit.message = msg
 EOF
 
 for spec in "$@"; do
