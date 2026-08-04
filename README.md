@@ -90,36 +90,28 @@
 ## 🛠️ Technical Skills & Cloud Stack
 
 ```mermaid
-mindmap
-  root((Yatham Sridhar Reddy))
-    Cloud & AWS
-      EC2 & VPC
-      S3 & RDS MySQL
-      Lambda & SNS
-      Elastic Beanstalk & IAM
-      Oracle OCI Architect
-    DevOps & CI/CD
-      Docker & Containerization
-      GitHub Actions & Jenkins
-      Linux Shell & Scripting
-      Terraform & Ansible
-    Programming
-      Python & Flask / FastAPI
-      Java & C/C++
-      HTML5 & CSS3
-      RESTful APIs & SQL
+graph LR
+    User[👤 Yatham Sridhar Reddy] --> Cloud[☁️ Cloud & AWS]
+    User --> DevOps[🚀 DevOps & CI/CD]
+    User --> Code[💻 Programming & APIs]
+    User --> DB[🗄️ Databases & Storage]
 
-<!--
-**yathamsridharreddy/yathamsridharreddy** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
+    Cloud --> AWS["AWS: EC2, S3, RDS, Lambda, VPC, IAM"]
+    Cloud --> OCI["Oracle Cloud OCI Architect"]
 
-Here are some ideas to get you started:
+    DevOps --> Docker["Docker Containerization"]
+    DevOps --> CICD["GitHub Actions & Jenkins CI/CD"]
+    DevOps --> IaC["Terraform & Ansible"]
 
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+    Code --> Py["Python, Flask & FastAPI"]
+    Code --> Java["Java, C/C++, SQL"]
+    Code --> Web["HTML5 & CSS3"]
+
+    DB --> MySQL["MySQL & AWS RDS"]
+    DB --> Rel["Relational Modeling & Optimization"]
+
+    style User fill:#1f6feb,stroke:#58a6ff,stroke-width:2px,color:#fff
+    style Cloud fill:#238636,stroke:#2ea043,stroke-width:2px,color:#fff
+    style DevOps fill:#9e6a03,stroke:#f0883e,stroke-width:2px,color:#fff
+    style Code fill:#6e40c9,stroke:#bc8cff,stroke-width:2px,color:#fff
+    style DB fill:#b62324,stroke:#ff6a69,stroke-width:2px,color:#fff
