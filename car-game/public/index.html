@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Velocity Rush — Phone-Controlled 3D Racing</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏎️</text></svg>"/>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+  <div id="stage"></div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="pills">
+      <div class="pill" id="pill-p1"><i></i><span>PLAYER 1</span></div>
+      <div class="pill" id="pill-p2"><i></i><span>PLAYER 2</span></div>
+    </div>
+
+    <canvas id="minimap" width="150" height="150"></canvas>
+
+    <div id="speedo">
+      <div id="speed-val">0</div>
+      <div id="speed-sub"><span>km/h</span><span id="gear">N</span></div>
+    </div>
+
+    <div id="laps">
+      <div id="lap-p1"></div>
+      <div id="lap-p2"></div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+
+  <div id="net-banner" class="hidden">⚠ Connection to server lost — retrying…</div>
+
+  <!-- Start overlay -->
+  <div id="overlay">
+    <div id="overlay-card">
+      <h1>VELOCITY <span>RUSH</span></h1>
+      <p class="tagline">3D street racing — your phones are the joysticks</p>
+
+      <div class="cols">
+        <div class="col">
+          <h2>🖥️ On this laptop</h2>
+          <ul class="keys">
+            <li><b>W A S D</b> / arrows — drive (Player 1)</li>
+            <li><b>Space</b> — handbrake / drift</li>
+            <li><b>C</b> — camera &nbsp;·&nbsp; <b>R</b> — reset car</li>
+            <li><b>M</b> — switch mode &nbsp;·&nbsp; <b>H</b> — this help</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h2>📱 Phones as joysticks</h2>
+          <div class="qr-wrap">
+            <canvas id="qr-canvas"></canvas>
+            <div class="qr-side">
+              <p>Scan with <b>1 or 2 phones</b> to join as wireless joysticks.</p>
+              <p class="url" id="ctrl-url"></p>
+              <button id="qr-open" class="ghost">Open controller page</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modes">
+        <button class="mode-btn active" data-mode="race">🏁 2 CARS — RACE<em>Each phone drives its own car</em></button>
+        <button class="mode-btn" data-mode="coop">🤝 1 CAR — CO-OP<em>P1 steers · P2 works the pedals</em></button>
+      </div>
+      <p id="mode-desc">Each phone drives its own car. Race your friend!</p>
+
+      <button id="start-btn">START ENGINE</button>
+      <p class="foot">Tip: use the <b>⛶</b> button on the phones for fullscreen + landscape lock.</p>
+    </div>
+  </div>
+
+  <script src="js/vendor/three.min.js"></script>
+  <script src="js/vendor/qrcode.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

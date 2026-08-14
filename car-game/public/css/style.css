@@ -1,0 +1,145 @@
+/* ============ VELOCITY RUSH — laptop screen ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #05070c; }
+body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; color: #e8ecf2; }
+
+#stage, #stage canvas { position: fixed; inset: 0; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+
+#pills { position: absolute; top: 14px; left: 16px; display: flex; gap: 10px; }
+#pills .pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(8, 12, 22, 0.62); border: 1px solid rgba(255,255,255,0.14);
+  padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  letter-spacing: 1.2px; backdrop-filter: blur(6px);
+}
+#pills .pill i {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #555e6e; box-shadow: 0 0 0 rgba(0,0,0,0);
+  transition: background .25s;
+}
+#pills .pill.on i { background: #3ddc84; box-shadow: 0 0 8px #3ddc84aa; }
+#pill-p1.on { border-color: rgba(255, 82, 82, .6); }
+#pill-p2.on { border-color: rgba(66, 165, 245, .6); }
+
+#minimap {
+  position: absolute; top: 14px; right: 16px;
+  background: rgba(8, 12, 22, 0.55); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 14px; backdrop-filter: blur(6px);
+}
+
+#speedo {
+  position: absolute; left: 22px; bottom: 20px;
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: rgba(8, 12, 22, 0.62); border: 1px solid rgba(255,255,255,0.14);
+  padding: 12px 22px 10px; border-radius: 16px; backdrop-filter: blur(6px);
+}
+#speed-val {
+  font-size: 64px; font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -1px;
+  text-shadow: 0 0 24px rgba(120, 180, 255, .35);
+}
+#speed-sub { display: flex; gap: 14px; align-items: baseline; margin-top: 2px; font-size: 14px; color: #9fb0c4; font-weight: 600; }
+#gear {
+  color: #fff; background: rgba(255,255,255,0.12);
+  border-radius: 6px; padding: 1px 9px; font-size: 15px;
+}
+
+#laps {
+  position: absolute; right: 16px; bottom: 20px;
+  display: flex; flex-direction: column; gap: 6px; align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+#laps > div {
+  background: rgba(8, 12, 22, 0.62); border: 1px solid rgba(255,255,255,0.14);
+  padding: 7px 14px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  letter-spacing: .6px; backdrop-filter: blur(6px);
+}
+#laps .dim { color: #8fa2b8; font-weight: 500; }
+
+#toast {
+  position: absolute; top: 66px; left: 50%; transform: translateX(-50%) translateY(-8px);
+  background: rgba(10, 16, 28, 0.85); border: 1px solid rgba(255,255,255,0.18);
+  padding: 9px 20px; border-radius: 999px; font-size: 14px; font-weight: 600;
+  opacity: 0; transition: opacity .25s, transform .25s;
+  backdrop-filter: blur(8px);
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+#net-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+  background: #b3261e; color: #fff; text-align: center;
+  padding: 7px; font-size: 13px; font-weight: 600; letter-spacing: .5px;
+}
+.hidden { display: none !important; }
+
+/* ---------- Start overlay ---------- */
+#overlay {
+  position: fixed; inset: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(120% 120% at 50% 0%, rgba(10,16,32,.82), rgba(4,6,12,.94));
+  backdrop-filter: blur(7px);
+}
+#overlay-card {
+  width: min(880px, 94vw); max-height: 94vh; overflow-y: auto;
+  background: rgba(13, 18, 30, 0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 22px; padding: 34px 42px 28px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.55);
+  text-align: center;
+}
+#overlay-card h1 {
+  font-size: 52px; font-weight: 900; letter-spacing: 3px; line-height: 1;
+  font-style: italic;
+}
+#overlay-card h1 span { color: #ff5252; }
+.tagline { color: #9fb0c4; margin: 8px 0 22px; font-size: 15px; letter-spacing: .4px; }
+
+.cols { display: flex; gap: 26px; text-align: left; margin-bottom: 22px; }
+.col { flex: 1; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 16px 18px; }
+.col h2 { font-size: 15px; letter-spacing: 1px; margin-bottom: 10px; }
+.keys { list-style: none; font-size: 13.5px; color: #c3cfdc; line-height: 2; }
+.keys b { color: #fff; background: rgba(255,255,255,0.1); padding: 1px 7px; border-radius: 5px; font-family: ui-monospace, monospace; font-size: 12px; }
+
+.qr-wrap { display: flex; gap: 14px; align-items: center; }
+#qr-canvas { width: 132px; height: 132px; border-radius: 10px; background: #fff; flex-shrink: 0; image-rendering: pixelated; }
+.qr-side p { font-size: 13px; color: #c3cfdc; margin-bottom: 6px; }
+.qr-side .url { font-family: ui-monospace, monospace; font-size: 11px; color: #7fe3a9; word-break: break-all; }
+button.ghost {
+  background: transparent; color: #9fc7ff; border: 1px solid rgba(159,199,255,.4);
+  padding: 5px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; margin-top: 4px;
+}
+button.ghost:hover { background: rgba(159,199,255,.12); }
+
+.modes { display: flex; gap: 12px; justify-content: center; margin-bottom: 8px; }
+.mode-btn {
+  flex: 1; max-width: 300px;
+  background: rgba(255,255,255,0.05); color: #dfe7f0;
+  border: 1px solid rgba(255,255,255,0.14); border-radius: 12px;
+  padding: 12px 14px; font-size: 14px; font-weight: 800; letter-spacing: .8px;
+  cursor: pointer; transition: all .18s;
+}
+.mode-btn em { display: block; font-style: normal; font-weight: 500; font-size: 11.5px; color: #8fa2b8; margin-top: 4px; letter-spacing: 0; }
+.mode-btn:hover { border-color: rgba(255,255,255,.35); }
+.mode-btn.active { background: rgba(255, 82, 82, .16); border-color: #ff5252; box-shadow: 0 0 18px rgba(255,82,82,.25); }
+
+#mode-desc { color: #8fa2b8; font-size: 13px; margin-bottom: 18px; }
+
+#start-btn {
+  background: linear-gradient(135deg, #ff5252, #c62b4e);
+  color: #fff; border: none; border-radius: 999px;
+  font-size: 20px; font-weight: 900; letter-spacing: 2.5px; font-style: italic;
+  padding: 15px 58px; cursor: pointer;
+  box-shadow: 0 10px 30px rgba(255, 82, 82, .35);
+  transition: transform .15s, box-shadow .15s;
+}
+#start-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 14px 36px rgba(255,82,82,.5); }
+.foot { margin-top: 16px; font-size: 12px; color: #77869a; }
+
+@media (max-width: 760px) {
+  .cols { flex-direction: column; }
+  #overlay-card { padding: 24px; }
+  #overlay-card h1 { font-size: 38px; }
+}

@@ -115,3 +115,14 @@ graph LR
     style DevOps fill:#9e6a03,stroke:#f0883e,stroke-width:2px,color:#fff
     style Code fill:#6e40c9,stroke:#bc8cff,stroke-width:2px,color:#fff
     style DB fill:#b62324,stroke:#ff6a69,stroke-width:2px,color:#fff
+```
+
+---
+
+## 🎮 Fun Side Project — Velocity Rush
+
+A 3D browser racing game where **phones become wireless joysticks**: scan a QR
+code with one or two phones and race on the laptop screen — built with
+three.js, WebAudio, and a Node.js WebSocket relay.
+
+➡️ **[`car-game/`](car-game/README.md)** — run it with `npm install && npm start`
