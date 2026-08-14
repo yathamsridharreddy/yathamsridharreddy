@@ -1022,10 +1022,15 @@ function applyInputs() {
   const p1 = freshInput(1), p2 = freshInput(2);
 
   if (MODE === 'coop') {
+    // merged co-op: steering comes from whichever phone is actively turning
+    // (largest |steer|), pedals from whichever phone is pressing them —
+    // works with 1 phone, 2 phones, any connection order
+    const s1 = p1 ? p1.steer : 0, s2 = p2 ? p2.steer : 0;
+    const steer = Math.abs(s1) >= Math.abs(s2) ? s1 : s2;
     car1.input = {
-      steer: kbActive ? kb.steer : (p1 ? p1.steer : 0),
-      throttle: kbActive ? kb.throttle : (p2 ? p2.throttle : 0),
-      brake: kbActive ? kb.brake : (p2 ? p2.brake : 0),
+      steer: kbActive ? kb.steer : steer,
+      throttle: kbActive ? kb.throttle : Math.max(p1 ? p1.throttle : 0, p2 ? p2.throttle : 0),
+      brake: kbActive ? kb.brake : Math.max(p1 ? p1.brake : 0, p2 ? p2.brake : 0),
       handbrake: kb.handbrake || (p1 && p1.handbrake) || (p2 && p2.handbrake),
       nitro: kb.nitro || (p1 && p1.nitro) || (p2 && p2.nitro)
     };
@@ -1395,8 +1400,8 @@ function updateHUD() {
 function updateModeLabels() {
   const pill1 = $('pill-p1'), pill2 = $('pill-p2');
   if (MODE === 'coop') {
-    pill1.querySelector('span').textContent = 'P1 STEER';
-    pill2.querySelector('span').textContent = 'P2 PEDALS';
+    pill1.querySelector('span').textContent = 'CO-DRIVER 1';
+    pill2.querySelector('span').textContent = 'CO-DRIVER 2';
   } else {
     pill1.querySelector('span').textContent = 'PLAYER 1';
     pill2.querySelector('span').textContent = 'PLAYER 2';
@@ -1440,7 +1445,7 @@ function setMode(mode) {
   car2.visual.group.visible = (mode === 'race');
   $('mode-desc').textContent = mode === 'race'
     ? `Each phone drives its own car — first to finish ${CFG.totalLaps} laps wins!`
-    : 'One car, two drivers: P1 steers, P2 handles throttle & brake.';
+    : 'One shared car: both phones steer & work the pedals together (inputs merge — works with 1 phone too).';
   updateModeLabels();
 }
 

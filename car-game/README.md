@@ -32,7 +32,7 @@ sound synthesized in code, and a tiny Node.js relay server
    | Mode | Description |
    |------|-------------|
    | 🏁 **2 Cars — Race** | Each phone drives its own car — **first to finish 3 laps wins**, with a 3‑2‑1‑GO countdown, live standings, winner banner + podium results. |
-   | 🤝 **1 Car — Co-op** | One car, two drivers: P1 steers, P2 works the pedals. Beat your best 3‑lap time. |
+   | 🤝 **1 Car — Co-op** | One shared car: both phones steer & press pedals together (inputs merge — works with 1 phone too). Beat your best 3‑lap time. |
 
 ### Controls
 
