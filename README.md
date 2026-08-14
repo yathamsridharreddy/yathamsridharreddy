@@ -119,10 +119,11 @@ graph LR
 
 ---
 
-## 🎮 Fun Side Project — Velocity Rush
+## 🎮 Fun Side Project — Velocity Rush (Online Multiplayer)
 
-A 3D browser racing game where **phones become wireless joysticks**: scan a QR
-code with one or two phones and race on the laptop screen — built with
-three.js, WebAudio, and a Node.js WebSocket relay.
+A 3D browser racing game where **phones become wireless joysticks** — race a
+friend across the internet: two laptops stay perfectly in sync while each
+phone acts as a dual-stick controller. Built with three.js, WebAudio, and a
+server-authoritative Node.js simulation.
 
-➡️ **[`car-game/`](car-game/README.md)** — run it with `npm install && npm start`
+➡️ **[MULTIPLAYER-CAR-GAME](https://github.com/yathamsridharreddy/MULTIPLAYER-CAR-GAME)** — deploy-ready for Vercel + Render
