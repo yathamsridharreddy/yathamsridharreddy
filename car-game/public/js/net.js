@@ -1,188 +1,101 @@
 'use strict';
 
-/**
- * NetLink — shared transport for game page and phone controllers.
- *
- * Tries a WebSocket first; if the connection cannot be established (some
- * proxies block WS upgrades) it transparently falls back to
- * Server-Sent-Events for server->client traffic plus POST requests for
- * client->server traffic.
- *
- * Handlers:
- *   onWelcome(msg)   – first message from the server (role, slot, ...)
- *   onMessage(msg)   – every other message
- *   onStatus(state)  – 'connecting' | 'connected' | 'reconnecting'
- */
-class NetLink {
-  constructor(role, handlers) {
-    this.role = role;                      // 'screen' | 'controller'
-    this.handlers = handlers || {};
-    this.mode = null;                      // 'ws' | 'sse'
+/* ============================================================
+   RoomLink — WebSocket client for the online multiplayer server.
+   Server URL comes from /js/config.js (window.SERVER_URL):
+     "local"  -> same origin (local run / single-server deploy)
+     https:// -> Vercel frontend pointing at the Render server
+   ============================================================ */
+
+function serverWsUrl() {
+  const cfg = window.SERVER_URL || 'local';
+  if (cfg === 'local') {
+    return (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+  }
+  return cfg.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:') + '/ws';
+}
+
+class RoomLink {
+  constructor(handlers) {
+    this.handlers = handlers || {};   // {onWelcome, onMessage, onStatus}
     this.ws = null;
-    this.es = null;
-    this.sseId = null;
     this.open = false;
-    this.wsFailed = false;                 // sticky: skip straight to SSE
-    this.reconnectDelay = 1000;
-    this._reconnectTimer = null;
-    this._pingTimer = null;
+    this.hello = null;
+    this.delay = 800;
+    this.closedByUser = false;
   }
 
-  isOpen() { return this.open; }
   status(s) { if (this.handlers.onStatus) this.handlers.onStatus(s); }
 
-  connect() {
-    clearTimeout(this._reconnectTimer);
+  connect(hello) {
+    if (hello) this.hello = hello;
+    this.closedByUser = false;
+    this._dial();
+  }
+
+  _dial() {
+    if (this.closedByUser) return;
     this.status('connecting');
-    if (this.wsFailed) { this.fallbackSSE(); } else { this.tryWS(); }
-  }
-
-  wsURL() {
-    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
-    return proto + location.host + '/ws?role=' + encodeURIComponent(this.role);
-  }
-
-  tryWS() {
-    let settled = false;
     let ws;
-    try { ws = new WebSocket(this.wsURL()); } catch (e) {
-      this.wsFailed = true;
-      return this.fallbackSSE();
-    }
+    try { ws = new WebSocket(serverWsUrl()); } catch (e) { return this._retry(); }
     const self = this;
-    const failTimer = setTimeout(() => {
-      if (!settled) {
-        settled = true;
-        self.wsFailed = true;
-        try { ws.close(); } catch (e) {}
-        self.fallbackSSE();
-      }
-    }, 3500);
 
+    ws.onopen = () => {
+      if (self.hello) { try { ws.send(JSON.stringify(self.hello)); } catch (e) {} }
+    };
     ws.onmessage = (ev) => {
       let msg;
       try { msg = JSON.parse(ev.data); } catch (e) { return; }
-
       if (msg.type === 'welcome') {
-        if (settled) return;
-        settled = true;
-        clearTimeout(failTimer);
-        self.mode = 'ws';
         self.ws = ws;
         self.open = true;
-        self.reconnectDelay = 1000;
+        self.delay = 800;
         self.status('connected');
-        self.startPing();
         if (self.handlers.onWelcome) self.handlers.onWelcome(msg);
-      } else if (self.mode === 'ws' && self.ws === ws) {
+      } else if (self.open || msg.type === 'error' || msg.type === 'full') {
         if (self.handlers.onMessage) self.handlers.onMessage(msg);
       }
     };
-
     ws.onclose = () => {
-      clearTimeout(failTimer);
-      if (!settled) {           // never made it: fall back to SSE
-        settled = true;
-        self.wsFailed = true;
-        self.fallbackSSE();
-        return;
-      }
-      if (self.mode === 'ws' && self.ws === ws) {
-        self.open = false;
-        self.stopPing();
-        self.status('reconnecting');
-        self.scheduleReconnect();
-      }
+      const wasOpen = self.open;
+      self.open = false;
+      self.ws = null;
+      if (wasOpen && self.handlers.onMessage) self.handlers.onMessage({ type: 'disconnected' });
+      self.status('reconnecting');
+      self._retry();
     };
-
     ws.onerror = () => { /* onclose follows */ };
   }
 
-  async fallbackSSE() {
-    this.mode = 'sse';
+  _retry() {
+    if (this.closedByUser) return;
     const self = this;
-    try {
-      const r = await fetch('/api/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: this.role })
-      });
-      if (!r.ok) throw new Error('join failed');
-      const j = await r.json();
-      this.sseId = j.id;
-
-      // A controller with no free slot is told 'full' via the event stream.
-      const es = new EventSource('/api/events?id=' + encodeURIComponent(j.id));
-      this.es = es;
-
-      es.onmessage = (ev) => {
-        let msg;
-        try { msg = JSON.parse(ev.data); } catch (e) { return; }
-        if (msg.type === 'rejoin') {
-          try { es.close(); } catch (e) {}
-          if (self.es === es) { self.open = false; self.fallbackSSE(); }
-          return;
-        }
-        if (msg.type === 'welcome') {
-          self.open = true;
-          self.reconnectDelay = 1000;
-          self.status('connected');
-          self.startPing();
-          if (self.handlers.onWelcome) self.handlers.onWelcome(msg);
-        } else if (self.handlers.onMessage) {
-          self.handlers.onMessage(msg);
-        }
-      };
-
-      es.onerror = () => {
-        if (self.es === es) {
-          try { es.close(); } catch (e) {}
-          self.open = false;
-          self.stopPing();
-          self.status('reconnecting');
-          self.scheduleReconnect();
-        }
-      };
-    } catch (e) {
-      this.status('reconnecting');
-      this.scheduleReconnect();
-    }
-  }
-
-  scheduleReconnect() {
-    clearTimeout(this._reconnectTimer);
-    const self = this;
-    this._reconnectTimer = setTimeout(() => self.connect(), this.reconnectDelay);
-    this.reconnectDelay = Math.min(this.reconnectDelay * 1.6, 8000);
+    setTimeout(() => self._dial(), this.delay);
+    this.delay = Math.min(this.delay * 1.7, 8000);
   }
 
   send(msg) {
-    if (!this.open) return;
-    const data = JSON.stringify(msg);
-    if (this.mode === 'ws') {
-      try { if (this.ws && this.ws.readyState === 1) this.ws.send(data); } catch (e) {}
-    } else if (this.mode === 'sse' && this.sseId != null) {
-      fetch('/api/send?id=' + encodeURIComponent(this.sseId), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: data
-      }).then((r) => {
-        if (r.status === 410) {           // stale session -> rejoin
-          if (this.es) { try { this.es.close(); } catch (e) {} }
-          this.open = false;
-          this.fallbackSSE();
-        }
-      }).catch(() => {});
+    if (this.open && this.ws) {
+      try { this.ws.send(JSON.stringify(msg)); } catch (e) {}
     }
   }
 
-  startPing() {
-    this.stopPing();
-    const self = this;
-    this._pingTimer = setInterval(() => self.send({ type: 'ping' }), 5000);
-  }
+  isOpen() { return this.open; }
+}
 
-  stopPing() {
-    if (this._pingTimer) { clearInterval(this._pingTimer); this._pingTimer = null; }
-  }
+// small shared helpers
+function urlParam(name) {
+  try { return new URLSearchParams(location.search).get(name); } catch (e) { return null; }
+}
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
 }

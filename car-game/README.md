@@ -1,90 +1,118 @@
-# 🏎️ Velocity Rush
+# 🏎️ Velocity Rush — Online Multiplayer
 
-A 3D street-racing game that runs in your **laptop browser** — with a twist:
-**your phones become wireless joysticks**. Scan a QR code with one or two
-phones and drive with dual virtual sticks while the race renders full-screen
-on the laptop.
+A 3D street-racing game where **phones become wireless joysticks** — and two
+players can race **from two different houses**. You run the game on your
+laptop, your friend runs it on theirs; both screens stay perfectly in sync
+because the race is simulated on a shared server, and each phone is a
+dual-stick controller.
 
-Built with [three.js](https://threejs.org/) (WebGL), WebAudio engine/skid
-sound synthesized in code, and a tiny Node.js relay server
-(WebSocket with an SSE + POST fallback).
+Built with [three.js](https://threejs.org/) (WebGL), a server-authoritative
+Node.js simulation (30 Hz), WebSocket state streaming with client-side
+interpolation, and WebAudio engine/skid/nitro sounds synthesized in code.
 
-![stack](https://img.shields.io/badge/three.js-r128-black) ![stack](https://img.shields.io/badge/node-%3E%3D18-green)
+## How it works
 
-## How to play
+```
+Your house                                   Friend's house
+┌──────────────┐                            ┌──────────────┐
+│ Laptop       │◀──── state snapshots ─────▶│ Laptop       │
+│ (3D screen)  │        (30 Hz, WS)         │ (3D screen)  │
+└──────┬───────┘             ▲              └──────▲───────┘
+       │ input (WS)          │                     │ input (WS)
+┌──────┴───────┐      ┌──────┴──────────┐   ┌──────┴───────┐
+│ Your phone   │─────▶│  Race server    │◀──│ Friend's     │
+│ (joystick)   │      │  (authoritative │   │ phone        │
+└──────────────┘      │  physics+rooms) │   └──────────────┘
+                      └─────────────────┘
+```
 
-1. **Start the server**
+- The **server runs the physics** (`shared/game-core.js`) so both laptops
+  simulate the *exact same* race — no drift between screens.
+- Laptops interpolate snapshots (~120 ms buffer) for buttery rendering.
+- The track world is **deterministic** (seeded), so every client renders the
+  identical city, trees, and mountains.
 
-   ```bash
-   cd car-game
-   npm install
-   npm start            # → http://localhost:3000
-   ```
+## Playing
 
-2. **Open the game on the laptop** — `http://localhost:3000` (or your
-   machine's LAN IP / a public preview URL so phones can reach it).
+### Online (two houses) — deployed setup
+1. You open the game URL → a **room** is created and a 5-letter **ROOM CODE**
+   appears, with an invite link + QR code.
+2. Your friend opens the **invite link** on their laptop → their screen joins
+   your room and syncs live.
+3. Each of you scans the QR with your phone (or opens the controller link) →
+   the phones join as **Player 1 / Player 2 joysticks**.
+4. Hit **START RACE** → 3-2-1-GO → first to **3 laps** wins 🏁
 
-3. **Scan the QR code** shown on the start screen with **one or two phones**.
-   Each phone opens the controller page and joins as Player 1 / Player 2.
-
-4. Pick a mode and hit **START ENGINE**:
-
-   | Mode | Description |
-   |------|-------------|
-   | 🏁 **2 Cars — Race** | Each phone drives its own car — **first to finish 3 laps wins**, with a 3‑2‑1‑GO countdown, live standings, winner banner + podium results. |
-   | 🤝 **1 Car — Co-op** | One shared car: both phones steer & press pedals together (inputs merge — works with 1 phone too). Beat your best 3‑lap time. |
+### Local / LAN
+```bash
+cd car-game
+npm install
+npm start        # → http://localhost:3000
+```
+Open `http://<your-LAN-IP>:3000` (not localhost!) so phones can reach it,
+then scan the QR.
 
 ### Controls
 
 | Who | Input |
 |-----|-------|
-| Laptop keyboard | `W A S D` / arrows drive P1 · `Shift` **nitro 🔥** · `Space` drift · `C` camera · `R` reset · `M` mode · `H` help |
-| Phone (per player) | **Left stick** steer · **Right stick** gas/brake · **🔥 NITRO** boost · **DRIFT** handbrake · **CAM / RST / HORN** buttons |
+| Phone (per player) | **Left stick** steer · **Right stick** gas/brake · **🔥 NITRO** · **DRIFT** handbrake · **CAM / RST / HORN** |
+| Laptop keyboard | `W A S D` drives your car if your phone isn't connected · `Shift` nitro · `Space` drift · `C` camera |
 
 ### Race features
-
-- 3‑2‑1‑GO countdown with engine revving on the grid
+- Server-synced 3‑2‑1‑GO countdown, finish gantry, final-lap alert
+- Winner banner + confetti + podium results + instant **REMATCH**
 - Nitro boost (regenerating meter) with exhaust flames + FOV kick
-- Asphalt-style feel: speed-based FOV stretch, camera shake, drift smoke,
-  persistent skid marks, sparks on impact, speed-line overlay, hit flash
-- Broadcast-style camera that zooms out to keep **both cars in frame**,
-  plus an edge-of-screen arrow pointing at the rival car
-- FINISH gantry, final-lap alert, winner banner with confetti 🎉,
-  podium results screen with total time + best lap, instant **REMATCH**
-- Phones show live speed, nitro meter, position, and race banners (GO!, winner…)
+- Broadcast camera keeps **both cars in frame** + off-screen rival arrow
+- Drift smoke, persistent skid marks, crash sparks, camera shake, speed lines
 
-The phones show live speed + lap telemetry, support fullscreen + landscape
-lock (⛶), vibration, and wake-lock. Up to two phones connect at once; slots
-are freed automatically when a phone disconnects.
+## Deploying (Vercel + Render)
 
-## Architecture
+The frontend is static (→ **Vercel**), the real-time server needs a persistent
+process (→ **Render**; Vercel can't run long-lived WebSocket servers).
+
+### 1. Deploy the server to Render
+1. [render.com](https://render.com) → **New ▸ Blueprint** → pick this repo.
+   The `render.yaml` blueprint configures everything (root `car-game/`,
+   `npm install`, `node server.js`, health check `/health`).
+2. When it's live, copy the URL, e.g. `https://velocity-rush-server.onrender.com`.
+
+### 2. Deploy the frontend to Vercel
+1. [vercel.com](https://vercel.com) → **Add New ▸ Project** → import this repo.
+2. Set **Root Directory** = `car-game` (Vercel auto-detects `vercel.json`).
+3. Add a build **Environment Variable**:
+   - Name: `SERVER_URL`
+   - Value: your Render URL from step 1 (e.g. `https://velocity-rush-server.onrender.com`)
+4. Deploy. The build copies `shared/game-core.js` into the static bundle and
+   writes `config.js` pointing the game at your Render server.
+
+That's it — share your Vercel URL with your friend and race. 🏁
+
+> **Note:** Render's free tier sleeps after ~15 min idle; the first join after
+> a sleep takes ~30–60 s to wake the server. A paid instance stays always-on.
+
+## Repo layout
 
 ```
-┌─────────────┐  input (WS / SSE+POST)  ┌───────────┐  relay  ┌──────────────┐
-│  Phone P1   │ ───────────────────────▶│  Node.js  │ ───────▶│ Laptop screen│
-│  Phone P2   │ ◀───────────────────────│  relay    │ ◀───────│ (three.js)   │
-└─────────────┘   telemetry (speed/lap) └───────────┘         └──────────────┘
+car-game/
+├── server.js                 # room server: WS relay + authoritative 30 Hz sim
+├── shared/game-core.js       # deterministic world + car physics + race room
+│                             #   (used by the server and mirrored to clients)
+├── public/
+│   ├── index.html            # laptop screen (lobby + 3D race + HUD)
+│   ├── controller.html       # phone joystick page
+│   ├── js/game.js            # screen client: interpolation + rendering + FX
+│   ├── js/controller.js      # phone client: sticks, buttons, telemetry
+│   ├── js/net.js             # WebSocket client with auto-reconnect
+│   └── css/                  # Asphalt-style HUD & animations
+├── vercel.json               # frontend deploy config
+└── render.yaml               # server deploy blueprint
 ```
 
-- `server.js` — static hosting + slot assignment (P1/P2) + message relay.
-- `public/index.html` + `js/game.js` — the 3D game: elliptic circuit,
-  buildings/trees/mountains, arcade-drift physics, lap timing, minimap,
-  chase/hood cameras, synthesized engine & skid audio, drift smoke.
-- `public/controller.html` + `js/controller.js` — the phone joystick UI
-  (multi-touch pointer capture, 30 Hz input stream, reconnect w/ backoff).
-- `js/net.js` — shared transport: tries WebSocket, falls back to
-  SSE + POST if a proxy blocks WS upgrades.
-
-## Tests
-
-Integration tests exercised in development (Node): relay protocol (slot
-assignment, input/telemetry routing, disconnect/rejoin, SSE fallback), the
-phone controller UI under jsdom, and headless runs of the full game scene +
-car physics.
-
-## Notes
-
-- Phones reach the game through whatever URL the laptop serves (LAN IP or a
-  public tunnel/preview URL) — the QR code always encodes the correct origin.
-- Works fully offline once loaded: three.js and the QR encoder are vendored
-  in `public/js/vendor/`.
+## Tests (run during development)
+- `game-core` unit tests: deterministic world, physics, full autopilot-driven
+  3-lap race, winner/results, co-op merge.
+- Server integration tests: rooms, slot assignment, 2 laptops + 2 phones
+  racing over real WebSockets, authoritative sync between screens.
+- Full-stack browser tests (jsdom): lobby → start → keyboard driving through
+  server physics → HUD, friend screen + phone joining live.

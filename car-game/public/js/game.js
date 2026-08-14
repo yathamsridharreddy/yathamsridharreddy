@@ -1,44 +1,28 @@
 'use strict';
 
 /* ============================================================
-   VELOCITY RUSH — 3D phone-controlled street racing
-   Asphalt-style juice: countdown, nitro, drift smoke, skid
-   marks, sparks, adaptive dual-car camera, 3-lap races with
-   winner banner + podium results.
+   VELOCITY RUSH — online multiplayer screen client
+   Renders the authoritative server simulation with smooth
+   interpolation. Physics runs on the server; this page is a
+   synchronized viewer + HUD + FX layer.
    ============================================================ */
 
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-const CFG = {
-  trackA: 130,
-  trackB: 85,
-  roadHalf: 8,
-  maxSpeed: 47,
-  maxSpeedOffroad: 15,
-  engineAccel: 24,
-  brakeDecel: 34,
-  reverseAccel: 11,
-  reverseMax: 9,
-  steerRate: 2.35,
-  grip: 7.0,
-  gripHandbrake: 1.6,
-  carRadius: 1.25,
-  nitroAccel: 21,
-  nitroCapBonus: 14,
-  nitroDrain: 34,
-  nitroRegen: 9,
-  totalLaps: 3
-};
+const CORE = window.VRCore;
+const CFG = CORE.CFG;
+const A = CFG.trackA, B = CFG.trackB, RH = CFG.roadHalf;
+const PI2 = Math.PI * 2;
+const INTERP_DELAY = 120;   // ms behind the server for smooth interpolation
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
-const fmtTime = (t) => {
-  if (t == null || !isFinite(t)) return '--:--.--';
-  const m = Math.floor(t / 60), s = t - m * 60;
-  return `${m}:${s.toFixed(2).padStart(5, '0')}`;
-};
+const fmtTime = CORE.fmtTime;
+function lerpAngle(a, b, t) {
+  let d = b - a;
+  while (d > Math.PI) d -= PI2;
+  while (d < -Math.PI) d += PI2;
+  return a + d * t;
+}
 
 // ---------------------------------------------------------------------------
 // Renderer / scene
@@ -58,7 +42,7 @@ scene.background = new THREE.Color(0xcfe0ea);
 scene.fog = new THREE.Fog(0xcfe0ea, 260, 900);
 
 const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 2600);
-camera.position.set(CFG.trackA - 3, 3.4, -14);
+camera.position.set(A - 3, 3.4, -14);
 
 function makeEnvTexture() {
   const c = document.createElement('canvas'); c.width = 256; c.height = 128;
@@ -87,15 +71,15 @@ function makeEnvTexture() {
 const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x3c5a34, 0.55);
 scene.add(hemi);
 
-const sun = new THREE.DirectionalLight(0xfff1d0, 1.35);
-sun.position.set(190, 280, 130);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -280; sun.shadow.camera.right = 280;
-sun.shadow.camera.top = 250;   sun.shadow.camera.bottom = -250;
-sun.shadow.camera.near = 40;   sun.shadow.camera.far = 900;
-sun.shadow.bias = -0.00045;
-scene.add(sun, sun.target);
+const sunLight = new THREE.DirectionalLight(0xfff1d0, 1.35);
+sunLight.position.set(190, 280, 130);
+sunLight.castShadow = true;
+sunLight.shadow.mapSize.set(2048, 2048);
+sunLight.shadow.camera.left = -280; sunLight.shadow.camera.right = 280;
+sunLight.shadow.camera.top = 250;   sunLight.shadow.camera.bottom = -250;
+sunLight.shadow.camera.near = 40;   sunLight.shadow.camera.far = 900;
+sunLight.shadow.bias = -0.00045;
+scene.add(sunLight, sunLight.target);
 
 {
   const geo = new THREE.SphereGeometry(1500, 24, 12);
@@ -125,7 +109,6 @@ scene.add(sun, sun.target);
   });
   scene.add(new THREE.Mesh(geo, mat));
 }
-
 {
   const c = document.createElement('canvas'); c.width = c.height = 128;
   const g = c.getContext('2d');
@@ -136,16 +119,14 @@ scene.add(sun, sun.target);
   g.fillStyle = grad; g.fillRect(0, 0, 128, 128);
   const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), fog: false, depthWrite: false });
   const spr = new THREE.Sprite(mat);
-  spr.position.copy(sun.position).normalize().multiplyScalar(1300);
+  spr.position.copy(sunLight.position).normalize().multiplyScalar(1300);
   spr.scale.set(220, 220, 1);
   scene.add(spr);
 }
 
 // ---------------------------------------------------------------------------
-// Ground + circuit
+// Track + world (deterministic — identical to the server's simulation)
 // ---------------------------------------------------------------------------
-const A = CFG.trackA, B = CFG.trackB, RH = CFG.roadHalf;
-
 {
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(1500, 64),
@@ -207,7 +188,7 @@ function asphaltTexture() {
   const STEPS = 160, dashes = [];
   for (let i = 0; i < STEPS; i++) {
     if (i % 4 >= 2) continue;
-    const t = (i / STEPS) * Math.PI * 2;
+    const t = (i / STEPS) * PI2;
     dashes.push({ x: A * Math.cos(t), z: B * Math.sin(t), yaw: Math.atan2(-A * Math.sin(t), B * Math.cos(t)) });
   }
   const inst = new THREE.InstancedMesh(geo, mat, dashes.length);
@@ -239,7 +220,6 @@ function asphaltTexture() {
   scene.add(line);
 }
 
-// Finish gantry (poles + FINISH banner over the line)
 {
   const poleMat = new THREE.MeshStandardMaterial({ color: 0xd8dbe2, metalness: 0.7, roughness: 0.35 });
   const poleGeo = new THREE.CylinderGeometry(0.28, 0.34, 8, 10);
@@ -251,7 +231,6 @@ function asphaltTexture() {
   }
   const c = document.createElement('canvas'); c.width = 512; c.height = 96;
   const g = c.getContext('2d');
-  // checkered strip + text
   for (let i = 0; i < 32; i++) for (let j = 0; j < 2; j++) {
     g.fillStyle = (i + j) % 2 ? '#111' : '#f2f2f2';
     g.fillRect(i * 16, j * 12, 16, 12);
@@ -264,27 +243,17 @@ function asphaltTexture() {
   g.fillText('FINISH', 256, 78);
   const tex = new THREE.CanvasTexture(c);
   tex.encoding = THREE.sRGBEncoding;
-  const banner = new THREE.Mesh(
+  const bannerMesh = new THREE.Mesh(
     new THREE.PlaneGeometry(RH * 2 + 2.8, 2.2),
     new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.7 })
   );
-  banner.position.set(A, 7.1, 0);
-  banner.rotation.y = Math.PI / 2;
-  banner.castShadow = true;
-  scene.add(banner);
+  bannerMesh.position.set(A, 7.1, 0);
+  bannerMesh.rotation.y = Math.PI / 2;
+  bannerMesh.castShadow = true;
+  scene.add(bannerMesh);
 }
 
-// ---------------------------------------------------------------------------
-// Scenery + colliders
-// ---------------------------------------------------------------------------
-const obstacles = [];
-
-function radialDistToTrack(x, z) {
-  const t = Math.atan2(z, x);
-  const re = (A * B) / Math.hypot(B * Math.cos(t), A * Math.sin(t));
-  return { re, d: Math.hypot(x, z) - re };
-}
-
+// scenery from the deterministic world layout
 function buildingTexture(seed) {
   const c = document.createElement('canvas'); c.width = 64; c.height = 128;
   const g = c.getContext('2d');
@@ -302,110 +271,80 @@ function buildingTexture(seed) {
   return tex;
 }
 
-const buildingMats = [0, 1, 2].map((i) => new THREE.MeshStandardMaterial({ map: buildingTexture(i), roughness: 0.9 }));
-const roofMat = new THREE.MeshStandardMaterial({ color: 0x23282e, roughness: 0.95 });
-
 {
-  let placed = 0, attempts = 0;
-  while (placed < 34 && attempts++ < 400) {
-    const t = Math.random() * Math.PI * 2;
-    const off = 22 + Math.random() * 100;
-    const re = (A * B) / Math.hypot(B * Math.cos(t), A * Math.sin(t));
-    const r = re + off;
-    const x = Math.cos(t) * r, z = Math.sin(t) * r;
-    const w = 8 + Math.random() * 10, d = 8 + Math.random() * 10, h = 10 + Math.random() * 26;
-    if (obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + Math.hypot(w, d) / 2 + 4)) continue;
+  const W = CORE.WORLD;
+  const buildingMats = [0, 1, 2].map((i) => new THREE.MeshStandardMaterial({ map: buildingTexture(i), roughness: 0.9 }));
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x23282e, roughness: 0.95 });
+  for (const b of W.buildings) {
     const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(w, h, d),
-      [buildingMats[placed % 3], buildingMats[(placed + 1) % 3], roofMat, roofMat, buildingMats[(placed + 2) % 3], buildingMats[placed % 3]]
+      new THREE.BoxGeometry(b.w, b.h, b.d),
+      [buildingMats[b.tex], buildingMats[(b.tex + 1) % 3], roofMat, roofMat, buildingMats[(b.tex + 2) % 3], buildingMats[b.tex]]
     );
-    mesh.position.set(x, h / 2, z);
-    mesh.rotation.y = Math.random() * Math.PI;
+    mesh.position.set(b.x, b.h / 2, b.z);
+    mesh.rotation.y = b.rot;
     mesh.castShadow = mesh.receiveShadow = true;
     scene.add(mesh);
-    obstacles.push({ x, z, r: Math.hypot(w, d) / 2 * 0.92 });
-    placed++;
   }
-}
 
-{
   const trunkGeo = new THREE.CylinderGeometry(0.22, 0.34, 1.7, 6);
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 1 });
   const leafMat = new THREE.MeshStandardMaterial({ color: 0x2e6b34, roughness: 1, flatShading: true });
   const leafMat2 = new THREE.MeshStandardMaterial({ color: 0x3d8040, roughness: 1, flatShading: true });
   const cone1 = new THREE.ConeGeometry(1.9, 4.4, 7);
   const cone2 = new THREE.ConeGeometry(1.35, 3.1, 7);
-
-  let placed = 0, attempts = 0;
-  while (placed < 130 && attempts++ < 900) {
-    const t = Math.random() * Math.PI * 2;
-    const inside = Math.random() < 0.42;
-    const re = (A * B) / Math.hypot(B * Math.cos(t), A * Math.sin(t));
-    const off = inside ? -(RH + 6 + Math.random() * 48) : (RH + 6 + Math.random() * 85);
-    const r = re + off;
-    if (r < 6) continue;
-    const x = Math.cos(t) * r, z = Math.sin(t) * r;
-    if (Math.abs(x - A) < 24 && Math.abs(z) < 24) continue;
-    if (obstacles.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + 3.2)) continue;
-    const s = 0.75 + Math.random() * 0.9;
+  for (const tr of W.trees) {
     const tree = new THREE.Group();
     const trunk = new THREE.Mesh(trunkGeo, trunkMat); trunk.position.y = 0.85;
-    const l1 = new THREE.Mesh(cone1, placed % 2 ? leafMat : leafMat2); l1.position.y = 3.4;
+    const l1 = new THREE.Mesh(cone1, tr.variant ? leafMat : leafMat2); l1.position.y = 3.4;
     const l2 = new THREE.Mesh(cone2, leafMat); l2.position.y = 5.3;
     tree.add(trunk, l1, l2);
-    tree.scale.setScalar(s);
-    tree.position.set(x, 0, z);
-    tree.rotation.y = Math.random() * Math.PI;
+    tree.scale.setScalar(tr.s);
+    tree.position.set(tr.x, 0, tr.z);
+    tree.rotation.y = tr.rot;
     tree.traverse((o) => { if (o.isMesh) o.castShadow = true; });
     scene.add(tree);
-    obstacles.push({ x, z, r: 0.9 * s });
-    placed++;
   }
-}
 
-for (let i = 0; i < 14; i++) {
-  const t = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
-  const dist = 680 + Math.random() * 280;
-  const h = 120 + Math.random() * 190;
-  const mtn = new THREE.Mesh(
-    new THREE.ConeGeometry(90 + Math.random() * 110, h, 5),
-    new THREE.MeshStandardMaterial({ color: 0x8598ab, roughness: 1, flatShading: true })
-  );
-  mtn.position.set(Math.cos(t) * dist, h / 2 - 6, Math.sin(t) * dist);
-  mtn.rotation.y = Math.random() * Math.PI;
-  scene.add(mtn);
-}
-
-{
-  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
-  const g = c.getContext('2d');
-  g.fillStyle = '#0c1020'; g.fillRect(0, 0, 512, 128);
-  g.strokeStyle = '#2b355c'; g.lineWidth = 8; g.strokeRect(6, 6, 500, 116);
-  g.fillStyle = '#ff5252'; g.font = '900 58px Arial Black, Arial'; g.textAlign = 'center';
-  g.fillText('VELOCITY RUSH', 256, 82);
-  const tex = new THREE.CanvasTexture(c);
-  tex.encoding = THREE.sRGBEncoding;
-  const board = new THREE.Mesh(
-    new THREE.PlaneGeometry(20, 5),
-    new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.85 })
-  );
-  board.position.set(A + 16, 4.4, 14);
-  board.rotation.y = -Math.PI / 2 + 0.25;
-  board.castShadow = true;
-  scene.add(board);
-  const legGeo = new THREE.CylinderGeometry(0.16, 0.16, 4.4, 6);
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x444a55, roughness: 0.8 });
-  for (const dx of [-7, 7]) {
-    const leg = new THREE.Mesh(legGeo, legMat);
-    leg.position.set(A + 16 - dx * Math.cos(0.25), 2.2, 14 + dx * Math.sin(0.25) * -1);
-    leg.castShadow = true;
-    scene.add(leg);
+  for (const mt of W.mountains) {
+    const mtn = new THREE.Mesh(
+      new THREE.ConeGeometry(mt.r, mt.h, 5),
+      new THREE.MeshStandardMaterial({ color: 0x8598ab, roughness: 1, flatShading: true })
+    );
+    mtn.position.set(Math.cos(mt.t) * mt.dist, mt.h / 2 - 6, Math.sin(mt.t) * mt.dist);
+    mtn.rotation.y = mt.rot;
+    scene.add(mtn);
   }
-  obstacles.push({ x: A + 16, z: 14, r: 4 });
+
+  {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+    const g = c.getContext('2d');
+    g.fillStyle = '#0c1020'; g.fillRect(0, 0, 512, 128);
+    g.strokeStyle = '#2b355c'; g.lineWidth = 8; g.strokeRect(6, 6, 500, 116);
+    g.fillStyle = '#ff5252'; g.font = '900 58px Arial Black, Arial'; g.textAlign = 'center';
+    g.fillText('VELOCITY RUSH', 256, 82);
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    const board = new THREE.Mesh(
+      new THREE.PlaneGeometry(20, 5),
+      new THREE.MeshStandardMaterial({ map: tex, side: THREE.DoubleSide, roughness: 0.85 })
+    );
+    board.position.set(W.billboard.x, 4.4, W.billboard.z);
+    board.rotation.y = W.billboard.rot;
+    board.castShadow = true;
+    scene.add(board);
+    const legGeo = new THREE.CylinderGeometry(0.16, 0.16, 4.4, 6);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x444a55, roughness: 0.8 });
+    for (const dx of [-7, 7]) {
+      const leg = new THREE.Mesh(legGeo, legMat);
+      leg.position.set(W.billboard.x - dx * Math.cos(0.25), 2.2, W.billboard.z + dx * Math.sin(0.25) * -1);
+      leg.castShadow = true;
+      scene.add(leg);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Cars
+// Car visuals
 // ---------------------------------------------------------------------------
 function createCar(paintColor) {
   const g = new THREE.Group();
@@ -466,217 +405,14 @@ function createCar(paintColor) {
   return { group: g, body, wheels };
 }
 
-let raceTime = 0;
-let raceState = 'idle';   // idle | countdown | racing | finished
-let goTime = 0;
-
-class Car {
-  constructor(slot, paint, startX) {
-    this.slot = slot;
-    this.startX = startX;
-    this.visual = createCar(paint);
-    scene.add(this.visual.group);
-    this.input = { steer: 0, throttle: 0, brake: 0, handbrake: false, nitro: false };
-    this.reset();
-    this.lap = 0;
-    this.lapStart = 0;
-    this.lastLap = null;
-    this.best = null;
-    this.progress = 0;
-    this.lastPhi = null;
-    this.lastInputAt = -1e9;
-    this.nitro = 100;
-    this.nitroActive = false;
-    this.finished = false;
-    this.finishTime = null;
-    this.participating = slot === 1;
-  }
-
-  reset() {
-    this.pos = new THREE.Vector3(this.startX, 0, -5);
-    this.heading = 0;
-    this.vel = new THREE.Vector2(0, 0);
-    this.spinAngle = 0;
-    this.slip = 0;
-    this.progress = 0;
-    this.lastPhi = null;
-    this.lapStart = raceTime;
-    this.nitro = 100;
-    this.nitroActive = false;
-    this.finished = false;
-    this.finishTime = null;
-  }
-
-  isOffroad() {
-    const { re, d } = radialDistToTrack(this.pos.x, this.pos.z);
-    return Math.abs(d) > RH + 0.7;
-  }
-
-  update(dt, time) {
-    const raw = this.input;
-    // during the countdown the engine revs but the car is held on the grid
-    const held = raceState === 'countdown';
-    const inp = held
-      ? { steer: raw.steer, throttle: 0, brake: 0, handbrake: true, nitro: false }
-      : raw;
-
-    const dir = new THREE.Vector2(Math.sin(this.heading), Math.cos(this.heading));
-    const right = new THREE.Vector2(dir.y, -dir.x);
-
-    let speed = this.vel.dot(dir);
-    const offroad = this.isOffroad();
-
-    if (held) { this.vel.set(0, 0); this.slip = 0; }
-
-    // nitro
-    this.nitroActive = !!(inp.nitro && this.nitro > 0 && inp.throttle > 0.1 && !this.finished);
-    if (this.nitroActive) this.nitro = Math.max(0, this.nitro - CFG.nitroDrain * dt);
-    else this.nitro = Math.min(100, this.nitro + CFG.nitroRegen * dt);
-
-    let acc = 0;
-    if (inp.throttle > 0.02) acc += inp.throttle * CFG.engineAccel;
-    if (this.nitroActive) acc += CFG.nitroAccel;
-    if (inp.brake > 0.02) acc += speed > 0.6 ? -inp.brake * CFG.brakeDecel : -inp.brake * CFG.reverseAccel;
-    acc -= speed * 0.36;
-    acc -= Math.sign(speed) * Math.min(Math.abs(speed), 1.7);
-    if (offroad) acc -= speed * 1.5;
-    if (this.finished) acc -= speed * 1.2;   // winner coasts down
-
-    this.vel.x += dir.x * acc * dt;
-    this.vel.y += dir.y * acc * dt;
-
-    speed = this.vel.dot(dir);
-    let cap = speed >= 0 ? (offroad ? CFG.maxSpeedOffroad : CFG.maxSpeed) : -CFG.reverseMax;
-    if (speed >= 0 && this.nitroActive) cap += CFG.nitroCapBonus;
-    if ((speed > 0 && speed > cap) || (speed < 0 && speed < cap)) {
-      this.vel.x -= dir.x * (speed - cap);
-      this.vel.y -= dir.y * (speed - cap);
-      speed = cap;
-    }
-
-    const lat = this.vel.dot(right);
-    const grip = inp.handbrake ? CFG.gripHandbrake : CFG.grip;
-    const latAfter = lat * Math.max(0, 1 - grip * dt);
-    const fwd = this.vel.dot(dir);
-    this.vel.x = dir.x * fwd + right.x * latAfter;
-    this.vel.y = dir.y * fwd + right.y * latAfter;
-    this.slip = Math.abs(lat);
-
-    const speedFactor = clamp(Math.abs(fwd) / 7, 0, 1);
-    const agility = CFG.steerRate * speedFactor / (1 + Math.abs(fwd) * 0.022);
-    let yaw = inp.steer * agility * (fwd >= 0 ? 1 : -1);
-    if (inp.handbrake) yaw *= 1.5;
-    // camera looks along +z, where screen-right is world -x:
-    // positive steer (right) must decrease the heading
-    this.heading -= yaw * dt;
-
-    if (!held) {
-      this.pos.x += this.vel.x * dt;
-      this.pos.z += this.vel.y * dt;
-    }
-
-    for (const o of obstacles) {
-      const dx = this.pos.x - o.x, dz = this.pos.z - o.z;
-      const rr = o.r + CFG.carRadius;
-      const d2 = dx * dx + dz * dz;
-      if (d2 < rr * rr && d2 > 1e-6) {
-        const d = Math.sqrt(d2), nx = dx / d, nz = dz / d;
-        this.pos.x = o.x + nx * rr;
-        this.pos.z = o.z + nz * rr;
-        const vn = this.vel.x * nx + this.vel.y * nz;
-        if (vn < 0) {
-          if (vn < -7) onCrash(this, o.x + nx * o.r, o.z + nz * o.r, Math.min(1, -vn / 22));
-          this.vel.x -= nx * vn * 1.5;
-          this.vel.y -= nz * vn * 1.5;
-          this.vel.multiplyScalar(0.55);
-        }
-      }
-    }
-
-    const dc = Math.hypot(this.pos.x, this.pos.z);
-    if (dc > 900) {
-      this.pos.x *= 900 / dc;
-      this.pos.z *= 900 / dc;
-      this.vel.multiplyScalar(0.5);
-    }
-
-    // laps
-    const phi = Math.atan2(this.pos.z / B, this.pos.x / A);
-    if (this.lastPhi != null && raceState === 'racing' && !this.finished) {
-      let dphi = phi - this.lastPhi;
-      if (dphi > Math.PI) dphi -= Math.PI * 2;
-      if (dphi < -Math.PI) dphi += Math.PI * 2;
-      this.progress += dphi;
-    }
-    this.lastPhi = phi;
-    if (!this.finished && this.progress >= Math.PI * 2 - 1e-3) {
-      const t = time - this.lapStart;
-      this.lastLap = t;
-      if (this.best == null || t < this.best) this.best = t;
-      this.lap++;
-      this.lapStart = time;
-      this.progress -= Math.PI * 2;
-      if (this.lap >= CFG.totalLaps) {
-        finishCar(this);
-      } else if (this.lap === CFG.totalLaps - 1) {
-        toast(`🔥 P${this.slot}: FINAL LAP!`);
-        beep(660, 0.14, 'square', 0.2);
-      } else {
-        toast(`P${this.slot} lap ${this.lap} — ${fmtTime(t)}${this.best === t ? '  ★ BEST' : ''}`);
-      }
-    } else if (this.progress <= -(Math.PI * 2)) {
-      this.progress += Math.PI * 2;
-    }
-
-    // ----- visuals -----
-    const v = this.visual;
-    v.group.position.copy(this.pos);
-    v.group.rotation.y = this.heading;
-
-    const sp = clamp(Math.abs(fwd) / CFG.maxSpeed, 0, 1);
-    const targetRoll = clamp(-latAfter * 0.042, -0.17, 0.17);
-    const targetPitch = clamp(-acc * 0.008, -0.06, 0.08);
-    v.body.rotation.z = lerp(v.body.rotation.z, targetRoll, Math.min(1, dt * 8));
-    v.body.rotation.x = lerp(v.body.rotation.x, targetPitch, Math.min(1, dt * 6));
-    v.body.position.y = Math.sin(time * 16 + this.slot * 3) * 0.008 * sp;  // road vibration
-
-    this.spinAngle += fwd * dt / 0.35;
-    for (const w of v.wheels) {
-      w.spin.rotation.x = this.spinAngle;
-      if (w.front) w.pivot.rotation.y = -inp.steer * 0.42;
-    }
-
-    if (v.group.visible) {
-      // drift smoke
-      if (this.slip > 4.5 && Math.abs(fwd) > 6) {
-        for (const w of v.wheels) {
-          if (!w.front && Math.random() < 0.55) {
-            const wp = new THREE.Vector3();
-            w.spin.getWorldPosition(wp);
-            spawnSmoke(wp, this.vel);
-            spawnSkid(wp, this.heading);
-          }
-        }
-      }
-      // nitro flames
-      if (this.nitroActive) {
-        for (const sx of [-0.55, 0.55]) {
-          const wp = new THREE.Vector3(sx, 0.42, -2.45).applyMatrix4(v.group.matrixWorld);
-          spawnFlame(wp);
-        }
-      }
-    }
-  }
-
-  totalProgress() { return this.lap * Math.PI * 2 + this.progress; }
-  speedKmh() { return Math.abs(this.vel.dot(new THREE.Vector2(Math.sin(this.heading), Math.cos(this.heading)))) * 3.6; }
-}
-
-const car1 = new Car(1, 0xd7263d, A - 2.8);
-const car2 = new Car(2, 0x1f7ae0, A + 2.8);
+const carVisuals = {
+  1: Object.assign(createCar(0xd7263d), { spinAngle: 0 }),
+  2: Object.assign(createCar(0x1f7ae0), { spinAngle: 0 })
+};
+scene.add(carVisuals[1].group, carVisuals[2].group);
 
 // ---------------------------------------------------------------------------
-// Particles: smoke, sparks, nitro flames
+// Particles: smoke, sparks, nitro flames, skid marks
 // ---------------------------------------------------------------------------
 function radialTexture() {
   const c = document.createElement('canvas'); c.width = c.height = 64;
@@ -697,13 +433,13 @@ for (let i = 0; i < 80; i++) {
   scene.add(spr);
   smokePool.push({ spr, mat, life: 0, maxLife: 1, vx: 0, vy: 0, vz: 0 });
 }
-function spawnSmoke(wp, vel) {
+function spawnSmoke(x, z, vx, vz) {
   const p = smokePool.find((s) => s.life <= 0);
   if (!p) return;
   p.life = p.maxLife = 0.7 + Math.random() * 0.5;
-  p.spr.position.set(wp.x + (Math.random() - 0.5) * 0.4, 0.3, wp.z + (Math.random() - 0.5) * 0.4);
-  p.vx = vel.x * 0.22 + (Math.random() - 0.5) * 1.6;
-  p.vz = vel.y * 0.22 + (Math.random() - 0.5) * 1.6;
+  p.spr.position.set(x + (Math.random() - 0.5) * 0.4, 0.3, z + (Math.random() - 0.5) * 0.4);
+  p.vx = vx * 0.22 + (Math.random() - 0.5) * 1.6;
+  p.vz = vz * 0.22 + (Math.random() - 0.5) * 1.6;
   p.vy = 0.8 + Math.random() * 1.2;
   p.spr.scale.setScalar(0.9 + Math.random() * 0.6);
   p.spr.visible = true;
@@ -780,9 +516,6 @@ function updateParticles(dt) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Skid marks (instanced, recycled)
-// ---------------------------------------------------------------------------
 const SKID_MAX = 1000;
 const skidGeo = new THREE.PlaneGeometry(0.26, 0.95);
 skidGeo.rotateX(-Math.PI / 2);
@@ -795,48 +528,86 @@ skidMesh.count = 0;
 scene.add(skidMesh);
 let skidIdx = 0;
 const _sm = new THREE.Matrix4(), _sq = new THREE.Quaternion(), _sup = new THREE.Vector3(0, 1, 0);
-
-function spawnSkid(wp, heading) {
-  if (radialDistToTrack(wp.x, wp.z).d > RH + 0.5) return;   // only on asphalt
+function spawnSkid(x, z, heading) {
+  if (Math.abs(CORE.radialDistToTrack(x, z).d) > RH + 0.5) return;
   _sq.setFromAxisAngle(_sup, heading);
-  _sm.compose(
-    new THREE.Vector3(wp.x, 0.035 + (skidIdx % 4) * 0.0015, wp.z),
-    _sq,
-    new THREE.Vector3(1, 1, 1)
-  );
+  _sm.compose(new THREE.Vector3(x, 0.035 + (skidIdx % 4) * 0.0015, z), _sq, new THREE.Vector3(1, 1, 1));
   skidMesh.setMatrixAt(skidIdx % SKID_MAX, _sm);
   skidIdx++;
   skidMesh.count = Math.min(SKID_MAX, skidIdx);
   skidMesh.instanceMatrix.needsUpdate = true;
 }
-function clearSkids() { skidIdx = 0; skidMesh.count = 0; skidMesh.instanceMatrix.needsUpdate = true; }
 
 // ---------------------------------------------------------------------------
-// Crash FX hook
+// Room connection + snapshot buffer
 // ---------------------------------------------------------------------------
+let mySlot = 1;
+let roomCode = '';
+let latest = null;               // latest snapshot
+const snaps = [];                // {t, snap}
+let lastBannerSeq = 0;
+let lastCountInt = 99;
+
+function interpState(slot) {
+  if (snaps.length === 0) return null;
+  const target = performance.now() - INTERP_DELAY;
+  let ai = -1;
+  for (let i = snaps.length - 1; i >= 0; i--) {
+    if (snaps[i].t <= target) { ai = i; break; }
+  }
+  const carOf = (snap) => snap.cars[slot - 1];
+  if (ai < 0) return carOf(snaps[0].snap);
+  const a = snaps[ai];
+  const b = snaps[ai + 1];
+  const ca = carOf(a.snap);
+  if (!b) return ca;
+  const cb = carOf(b.snap);
+  const alpha = clamp((target - a.t) / Math.max(1, b.t - a.t), 0, 1);
+  return {
+    s: slot,
+    x: lerp(ca.x, cb.x, alpha),
+    z: lerp(ca.z, cb.z, alpha),
+    h: lerpAngle(ca.h, cb.h, alpha),
+    v: lerp(ca.v, cb.v, alpha),
+    sl: lerp(ca.sl, cb.sl, alpha),
+    st: cb.st,
+    n: cb.n, m: cb.m, lap: cb.lap, ll: ca.ll, best: cb.best,
+    fin: cb.fin, ft: cb.ft, p: cb.p, pr: cb.pr
+  };
+}
+
+function standingsFrom(snap) {
+  const cars = snap.cars.filter((c) => c.p === 1);
+  return cars.slice().sort((a, b) => {
+    if (a.fin && b.fin) return a.ft - b.ft;
+    if (a.fin) return -1;
+    if (b.fin) return 1;
+    return (b.lap * PI2 + b.pr) - (a.lap * PI2 + a.pr);
+  });
+}
+const ordinal = (n) => ['1st', '2nd', '3rd'][n - 1] || n + 'th';
+
+// ---- HUD/UI state ----
 let shakeAmp = 0;
-function onCrash(car, x, z, strength) {
+function onCrashFX(x, z, strength) {
   spawnSparks(x, z, strength);
   shakeAmp = Math.min(0.8, shakeAmp + 0.14 + strength * 0.3);
   const f = $('hitflash');
   f.style.opacity = Math.min(0.55, 0.2 + strength * 0.4);
-  clearTimeout(onCrash._t);
-  onCrash._t = setTimeout(() => { f.style.opacity = 0; }, 140);
+  clearTimeout(onCrashFX._t);
+  onCrashFX._t = setTimeout(() => { f.style.opacity = 0; }, 140);
   if (strength > 0.35) beep(90 + Math.random() * 40, 0.18, 'sawtooth', 0.16);
 }
 
-// ---------------------------------------------------------------------------
-// Race state machine
-// ---------------------------------------------------------------------------
-let winner = null;
-let bannerText = '';
-let bannerAt = -1e9;
-let resultsShown = false;
-let firstFinishAt = null;
+function toast(text) {
+  const el = $('toast');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
 
-function setBanner(text, ms) {
-  bannerText = text;
-  bannerAt = performance.now();
+function setBanner(text) {
   const el = $('banner-text');
   el.textContent = text;
   const b = $('banner');
@@ -844,54 +615,22 @@ function setBanner(text, ms) {
   void b.offsetWidth;
   b.classList.add('show');
   clearTimeout(setBanner._t);
-  if (ms) setBanner._t = setTimeout(() => b.classList.remove('show'), ms);
+  setBanner._t = setTimeout(() => b.classList.remove('show'), 4200);
 }
 
-function standings() {
-  const cars = [car1];
-  if (MODE === 'race' && car2.participating) cars.push(car2);
-  return cars.slice().sort((a, b) => {
-    if (a.finished && b.finished) return a.finishTime - b.finishTime;
-    if (a.finished) return -1;
-    if (b.finished) return 1;
-    return b.totalProgress() - a.totalProgress();
-  });
-}
-const ordinal = (n) => ['1st', '2nd', '3rd'][n - 1] || n + 'th';
-
-function finishCar(car) {
-  car.finished = true;
-  car.finishTime = raceTime - goTime;
-  if (firstFinishAt == null) firstFinishAt = raceTime;
-  if (!winner) {
-    winner = car;
-    if (participants().length > 1) {
-      setBanner(`🏁 PLAYER ${car.slot} WINS!`);
-      confetti();
-      winJingle();
-    } else {
-      setBanner(`🏁 FINISH — ${fmtTime(car.finishTime)}`);
-      winJingle();
-    }
-  } else {
-    toast(`P${car.slot} finished — ${fmtTime(car.finishTime)}`);
+function confetti() {
+  const c = $('confetti');
+  c.innerHTML = '';
+  const colors = ['#ff5252', '#ffd479', '#42a5f5', '#3ddc84', '#ffffff'];
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement('i');
+    p.style.left = (Math.random() * 100) + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random() * 0.9) + 's';
+    p.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
+    c.appendChild(p);
   }
-}
-
-function participants() {
-  const list = [car1];
-  if (MODE === 'race' && car2.participating) list.push(car2);
-  return list;
-}
-
-let countVal = 3, countTimer = 0;
-
-function startCountdown() {
-  raceState = 'countdown';
-  countVal = 3;
-  countTimer = 0;
-  showCount('3');
-  beep(392, 0.14, 'square', 0.24);
+  setTimeout(() => { c.innerHTML = ''; }, 6500);
 }
 
 function showCount(txt) {
@@ -903,270 +642,253 @@ function showCount(txt) {
   el.classList.add('pop');
 }
 
-function updateCountdown(dt) {
-  countTimer += dt;
-  if (countTimer >= 1) {
-    countTimer -= 1;
-    countVal--;
-    if (countVal > 0) {
-      showCount(String(countVal));
-      beep(392, 0.14, 'square', 0.24);
-    } else {
-      showCount('GO!');
-      beep(784, 0.5, 'square', 0.28);
-      raceState = 'racing';
-      goTime = raceTime;
-      for (const c of participants()) c.lapStart = raceTime;
-      setTimeout(() => $('count-num').classList.remove('pop'), 900);
-    }
-  }
-}
-
-function maybeShowResults() {
-  if (resultsShown || !winner) return;
-  const ps = participants();
-  const allDone = ps.every((c) => c.finished);
-  const timeout = firstFinishAt != null && raceTime - firstFinishAt > 12;
-  if (allDone || timeout) {
-    resultsShown = true;
-    raceState = 'finished';
-    setTimeout(showResults, allDone ? 900 : 200);
-  }
-}
-
-function showResults() {
+function showResults(order) {
   const rows = $('results-rows');
   rows.innerHTML = '';
-  const order = standings();
   const medals = ['🥇', '🥈', '🥉'];
+  const winner = order[0];
   order.forEach((c, i) => {
     const div = document.createElement('div');
-    div.className = 'rrow' + (c === winner ? ' win' : '');
+    div.className = 'rrow' + (i === 0 ? ' win' : '');
     div.innerHTML = `<span class="medal">${medals[i] || ''}</span>` +
       `<span class="rname" style="color:${c.slot === 1 ? '#ff6b6b' : '#64b5f6'}">PLAYER ${c.slot}</span>` +
-      `<span class="rtime">${c.finished ? fmtTime(c.finishTime) : 'DNF'}</span>` +
-      `<span class="rbest">best lap ${fmtTime(c.best)}</span>`;
+      `<span class="rtime">${c.finished ? fmtTime(c.t) : 'DNF'}</span>` +
+      `<span class="rbest">best lap ${c.best != null ? fmtTime(c.best) : '--:--.--'}</span>`;
     rows.appendChild(div);
   });
-  if (MODE === 'race' && !car2.participating) {
-    const div = document.createElement('div');
-    div.className = 'rrow dim';
-    div.innerHTML = `<span class="medal"></span><span class="rname" style="color:#64b5f6">PLAYER 2</span><span class="rtime">DNS</span><span class="rbest">not connected</span>`;
-    rows.appendChild(div);
-  }
   $('results-title').textContent = winner ? `🏁 PLAYER ${winner.slot} WINS!` : '🏁 RACE RESULTS';
   $('results').classList.remove('hidden');
 }
 
-function resetRace() {
-  raceTime = 0;
-  goTime = 0;
-  winner = null;
-  resultsShown = false;
-  firstFinishAt = null;
-  car1.reset();
-  car2.reset();
-  clearSkids();
+function updateLobby(snap) {
+  $('room-code').textContent = snap.code;
+  const gameLink = location.origin + '/?room=' + snap.code;
+  const phoneLink = location.origin + '/controller?room=' + snap.code;
+  $('game-link').textContent = gameLink;
+  $('ctrl-url').textContent = phoneLink;
+  drawQR(phoneLink);
+
+  document.querySelectorAll('.mode-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.mode === snap.mode);
+  });
+
+  const parts = [];
+  if (snap.controllers[1]) parts.push('📱 P1 joystick');
+  if (snap.controllers[2]) parts.push('📱 P2 joystick');
+  $('lobby-status').textContent = parts.length ? 'Connected: ' + parts.join(' · ') : 'Waiting for joysticks (or drive with keyboard)…';
 }
 
-function rematch() {
-  $('results').classList.add('hidden');
-  resetRace();
-  car2.participating = MODE === 'race' && (ctrlConnected[2] || freshInput(2) != null);
-  car2.visual.group.visible = MODE === 'race' && car2.participating;
-  if (MODE === 'race' && !car2.participating) toast('P2 not connected — solo time trial');
-  startCountdown();
+let qrDrawnFor = '';
+function drawQR(url) {
+  if (qrDrawnFor === url) return;
+  qrDrawnFor = url;
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(url);
+    qr.make();
+    const n = qr.getModuleCount();
+    const canvas = $('qr-canvas');
+    const px = Math.floor(196 / n);
+    const size = px * n;
+    canvas.width = canvas.height = size + px * 4;
+    const g = canvas.getContext('2d');
+    g.fillStyle = '#ffffff';
+    g.fillRect(0, 0, canvas.width, canvas.height);
+    g.fillStyle = '#101014';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) g.fillRect((c + 2) * px, (r + 2) * px, px, px);
+      }
+    }
+  } catch (e) {}
+}
+
+function processEvents(snap) {
+  for (const e of snap.events || []) {
+    switch (e.type) {
+      case 'count':
+        showCount(String(e.n));
+        beep(392, 0.14, 'square', 0.24);
+        break;
+      case 'go':
+        showCount('GO!');
+        beep(784, 0.5, 'square', 0.28);
+        break;
+      case 'crash':
+        onCrashFX(e.x, e.z, e.s);
+        break;
+      case 'lap':
+        toast(`P${e.slot} lap ${e.n} — ${fmtTime(e.t)}${e.best ? '  ★ BEST' : ''}`);
+        break;
+      case 'finallap':
+        toast(`🔥 P${e.slot}: FINAL LAP!`);
+        beep(660, 0.14, 'square', 0.2);
+        break;
+      case 'win':
+        setBanner(e.multi ? `🏁 PLAYER ${e.slot} WINS!` : `🏁 FINISH — ${fmtTime(e.t)}`);
+        confetti();
+        winJingle();
+        break;
+      case 'finished':
+        toast(`P${e.slot} finished — ${fmtTime(e.t)}`);
+        break;
+      case 'results':
+        showResults(e.order);
+        break;
+    }
+  }
+  if (snap.banner && snap.banner.seq !== lastBannerSeq && snap.banner.text) {
+    lastBannerSeq = snap.banner.seq;
+    // banner visuals are driven by win/finallap events already
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Input — keyboard + phone controllers
+// Networking
+// ---------------------------------------------------------------------------
+const wantedRoom = urlParam('room');
+const net = new RoomLink({
+  onWelcome(msg) {
+    mySlot = msg.slot;
+    roomCode = msg.code;
+    $('slot-badge').textContent = `YOU ARE PLAYER ${mySlot}`;
+    $('slot-badge').className = mySlot === 1 ? 'slot-badge c1' : 'slot-badge c2';
+    $('slot-badge').style.display = '';
+    setNetBanner(true);
+    if (msg.snapshot) ingestSnapshot(msg.snapshot);
+  },
+  onMessage(msg) {
+    switch (msg.type) {
+      case 'state':
+        ingestSnapshot(msg);
+        break;
+      case 'controller-joined':
+        setConnected(msg.slot, true);
+        toast(`📱 Player ${msg.slot} joystick connected`);
+        break;
+      case 'controller-left':
+        setConnected(msg.slot, false);
+        toast(`Player ${msg.slot} joystick disconnected`);
+        break;
+      case 'horn':
+        playHorn();
+        break;
+      case 'cam':
+        if (msg.slot === mySlot) cycleCamera();
+        break;
+      case 'error':
+        if (msg.code === 'no-room') showRoomError('Room not found — it may have closed. Create a new one!');
+        break;
+      case 'disconnected':
+        setNetBanner(false);
+        break;
+    }
+  },
+  onStatus(s) {
+    setNetBanner(s === 'connected');
+    $('lobby-conn').textContent = s === 'connected' ? '🟢 connected' : (s === 'connecting' ? '🟡 connecting…' : '🔴 reconnecting…');
+  }
+});
+net.connect({ type: 'hello', role: 'screen', room: wantedRoom || null });
+
+function showRoomError(text) {
+  $('room-error').textContent = text;
+  $('room-error').style.display = '';
+  // offer a fresh room
+  setTimeout(() => {
+    net.closedByUser = false;
+    net.connect({ type: 'hello', role: 'screen', room: null });
+  }, 1200);
+}
+
+function ingestSnapshot(snap) {
+  snaps.push({ t: performance.now(), snap });
+  if (snaps.length > 150) snaps.splice(0, snaps.length - 150);
+  latest = snap;
+  processEvents(snap);
+
+  // lobby <-> race transitions
+  const overlay = $('overlay');
+  if (snap.state === 'waiting') {
+    overlay.classList.remove('hidden');
+    $('results').classList.add('hidden');
+    updateLobby(snap);
+  } else {
+    overlay.classList.add('hidden');
+  }
+}
+
+function setConnected(slot, on) {
+  const pill = $(`pill-p${slot}`);
+  if (pill) pill.classList.toggle('on', on);
+}
+function setNetBanner(ok) { $('net-banner').classList.toggle('hidden', ok); }
+
+// ---------------------------------------------------------------------------
+// Keyboard fallback (drives your own car when your phone isn't connected)
 // ---------------------------------------------------------------------------
 const keys = new Set();
-let MODE = 'race';
-
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
   if (e.repeat) return;
   keys.add(e.code);
   ensureAudio();
-  if (!$('overlay').classList.contains('hidden') && (e.code === 'Enter' || e.code === 'Space')) startGame();
   if (e.code === 'KeyC') cycleCamera();
-  if (e.code === 'KeyR') { car1.reset(); if (MODE === 'race' && car2.participating) car2.reset(); }
-  if (e.code === 'KeyM') setMode(MODE === 'race' ? 'coop' : 'race');
-  if (e.code === 'KeyH') $('overlay').classList.toggle('hidden');
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
 
-function keyboardInput() {
+let kbAccum = 0;
+function maybeSendKeyboard(dt) {
+  if (!latest || !net.isOpen()) return;
+  if (latest.state !== 'racing' && latest.state !== 'countdown') return;
+  if (latest.controllers[mySlot]) return;   // phone is driving
+  kbAccum += dt;
+  if (kbAccum < 0.033) return;
+  kbAccum = 0;
   const steer = (keys.has('ArrowLeft') || keys.has('KeyA') ? -1 : 0) + (keys.has('ArrowRight') || keys.has('KeyD') ? 1 : 0);
   const throttle = (keys.has('ArrowUp') || keys.has('KeyW')) ? 1 : 0;
   const brake = (keys.has('ArrowDown') || keys.has('KeyS')) ? 1 : 0;
-  return { steer, throttle, brake, handbrake: keys.has('Space'), nitro: keys.has('ShiftLeft') || keys.has('ShiftRight') };
+  net.send({ type: 'input', steer, throttle, brake, handbrake: keys.has('Space'), nitro: keys.has('ShiftLeft') || keys.has('ShiftRight') });
 }
-
-const ctrlInput = { 1: null, 2: null };
-const ctrlConnected = { 1: false, 2: false };
-
-function freshInput(slot) {
-  const p = ctrlInput[slot];
-  return p && (performance.now() - p.t < 450) ? p : null;
-}
-
-const ZERO_INPUT = { steer: 0, throttle: 0, brake: 0, handbrake: false, nitro: false };
-
-function applyInputs() {
-  const kb = keyboardInput();
-  const kbActive = kb.steer !== 0 || kb.throttle !== 0 || kb.brake !== 0 || kb.handbrake || kb.nitro;
-  if (kbActive) car1.lastInputAt = performance.now();
-
-  const p1 = freshInput(1), p2 = freshInput(2);
-
-  if (MODE === 'coop') {
-    // merged co-op: steering comes from whichever phone is actively turning
-    // (largest |steer|), pedals from whichever phone is pressing them —
-    // works with 1 phone, 2 phones, any connection order
-    const s1 = p1 ? p1.steer : 0, s2 = p2 ? p2.steer : 0;
-    const steer = Math.abs(s1) >= Math.abs(s2) ? s1 : s2;
-    car1.input = {
-      steer: kbActive ? kb.steer : steer,
-      throttle: kbActive ? kb.throttle : Math.max(p1 ? p1.throttle : 0, p2 ? p2.throttle : 0),
-      brake: kbActive ? kb.brake : Math.max(p1 ? p1.brake : 0, p2 ? p2.brake : 0),
-      handbrake: kb.handbrake || (p1 && p1.handbrake) || (p2 && p2.handbrake),
-      nitro: kb.nitro || (p1 && p1.nitro) || (p2 && p2.nitro)
-    };
-    if (p1 || p2) car1.lastInputAt = performance.now();
-  } else {
-    car1.input = p1 ? p1 : kb;
-    car2.input = p2 || ZERO_INPUT;
-    if (p1) car1.lastInputAt = performance.now();
-    if (p2) car2.lastInputAt = performance.now();
-  }
-}
-
-function focusCar() {
-  if (MODE === 'coop') return car1;
-  return car2.lastInputAt > car1.lastInputAt && car2.lastInputAt > performance.now() - 3000 ? car2 : car1;
-}
-
-// ---------------------------------------------------------------------------
-// Networking (screen role)
-// ---------------------------------------------------------------------------
-const net = new NetLink('screen', {
-  onWelcome(msg) {
-    (msg.controllers || []).forEach((s) => setConnected(s, true, true));
-    setNetBanner(true);
-  },
-  onMessage(msg) {
-    switch (msg.type) {
-      case 'controller-joined':
-        ctrlInput[msg.slot] = null;
-        setConnected(msg.slot, true);
-        toast(`📱 Player ${msg.slot} controller connected`);
-        break;
-      case 'controller-left':
-        setConnected(msg.slot, false);
-        toast(`Player ${msg.slot} controller disconnected`);
-        break;
-      case 'input':
-        ctrlInput[msg.slot] = {
-          steer: clamp(msg.steer || 0, -1, 1),
-          throttle: clamp(msg.throttle || 0, 0, 1),
-          brake: clamp(msg.brake || 0, 0, 1),
-          handbrake: !!msg.handbrake,
-          nitro: !!msg.nitro,
-          t: performance.now()
-        };
-        break;
-      case 'button':
-        if (msg.pressed === false) break;
-        if (msg.action === 'cam') cycleCamera();
-        else if (msg.action === 'horn') playHorn();
-        else if (msg.action === 'reset') {
-          if (MODE === 'coop') car1.reset();
-          else if (msg.slot === 1) car1.reset(); else car2.reset();
-        }
-        break;
-    }
-  },
-  onStatus(s) { setNetBanner(s === 'connected'); }
-});
-net.connect();
-
-function setConnected(slot, on, silent) {
-  ctrlConnected[slot] = on;
-  const pill = $(`pill-p${slot}`);
-  if (pill) pill.classList.toggle('on', on);
-  if (!silent) updateModeLabels();
-}
-function setNetBanner(ok) { $('net-banner').classList.toggle('hidden', ok); }
-
-setInterval(() => {
-  if (!net.isOpen()) return;
-  const order = standings();
-  const dataFor = (car) => ({
-    speed: Math.round(car.speedKmh()),
-    lap: `${Math.min(car.lap + 1, CFG.totalLaps)}/${CFG.totalLaps}`,
-    lastLap: car.lastLap != null ? fmtTime(car.lastLap) : null,
-    best: car.best != null ? fmtTime(car.best) : null,
-    mode: MODE,
-    nitro: Math.round(car.nitro),
-    state: raceState,
-    rank: car.finished ? (order.indexOf(car) + 1) + 'st place' : ordinal(order.indexOf(car) + 1),
-    banner: performance.now() - bannerAt < 3000 ? bannerText : ''
-  });
-  if (MODE === 'coop') {
-    net.send({ type: 'telemetry', slot: 1, data: dataFor(car1) });
-    net.send({ type: 'telemetry', slot: 2, data: dataFor(car1) });
-  } else {
-    net.send({ type: 'telemetry', slot: 1, data: dataFor(car1) });
-    net.send({ type: 'telemetry', slot: 2, data: dataFor(car2) });
-  }
-}, 140);
 
 // ---------------------------------------------------------------------------
 // Camera — adaptive dual-car framing, FOV kick, shake
 // ---------------------------------------------------------------------------
 let camMode = 0;
 const lookTarget = new THREE.Vector3(A - 2.8, 1, 0);
-let sepFovBonus = 0;
-
 function cycleCamera() { camMode = (camMode + 1) % 3; }
 
-function updateCamera(dt) {
-  const focus = focusCar();
-  const dir = new THREE.Vector3(Math.sin(focus.heading), 0, Math.cos(focus.heading));
-  let desired, look;
-  sepFovBonus = 0;
+function updateCamera(dt, mine, rival) {
+  if (!mine) return;
+  const dir = new THREE.Vector3(Math.sin(mine.h), 0, Math.cos(mine.h));
+  let desired, look, sepFov = 0;
 
-  const dualView = MODE === 'race' && camMode !== 2 && raceState !== 'idle' &&
-    car1.visual.group.visible && car2.visual.group.visible && car2.participating;
+  const dual = rival && rival.p === 1 && camMode !== 2 && latest && latest.state !== 'waiting';
 
   if (camMode === 2) {
-    desired = focus.pos.clone().addScaledVector(dir, 0.4).add(new THREE.Vector3(0, 1.18, 0));
-    look = focus.pos.clone().addScaledVector(dir, 40).add(new THREE.Vector3(0, 1.0, 0));
-  } else if (dualView) {
-    // frame BOTH cars like a broadcast race camera
-    const mid = car1.pos.clone().add(car2.pos).multiplyScalar(0.5);
-    const sep = car1.pos.distanceTo(car2.pos);
+    desired = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, 0.4).add(new THREE.Vector3(0, 1.18, 0));
+    look = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, 40).add(new THREE.Vector3(0, 1.0, 0));
+  } else if (dual) {
+    const mid = new THREE.Vector3((mine.x + rival.x) / 2, 0, (mine.z + rival.z) / 2);
+    const sep = Math.hypot(mine.x - rival.x, mine.z - rival.z);
     const dist = clamp(8.6 + sep * 0.78, 8.6, 32);
     const height = clamp(3.2 + sep * 0.30, 3.2, 12);
     desired = mid.clone().addScaledVector(dir, -dist).add(new THREE.Vector3(0, height, 0));
     look = mid.clone().addScaledVector(dir, 3).add(new THREE.Vector3(0, 1, 0));
-    sepFovBonus = clamp(sep * 0.55, 0, 16);
+    sepFov = clamp(sep * 0.55, 0, 16);
   } else if (camMode === 1) {
-    desired = focus.pos.clone().addScaledVector(dir, -14).add(new THREE.Vector3(0, 6.2, 0));
-    look = focus.pos.clone().addScaledVector(dir, 2).add(new THREE.Vector3(0, 1, 0));
+    desired = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, -14).add(new THREE.Vector3(0, 6.2, 0));
+    look = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, 2).add(new THREE.Vector3(0, 1, 0));
   } else {
-    desired = focus.pos.clone().addScaledVector(dir, -8.2).add(new THREE.Vector3(0, 3.2, 0));
-    look = focus.pos.clone().addScaledVector(dir, 5).add(new THREE.Vector3(0, 1.1, 0));
+    desired = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, -8.2).add(new THREE.Vector3(0, 3.2, 0));
+    look = new THREE.Vector3(mine.x, 0, mine.z).addScaledVector(dir, 5).add(new THREE.Vector3(0, 1.1, 0));
   }
   desired.y = Math.max(desired.y, 0.5);
   const k = camMode === 2 ? 1 : 1 - Math.exp(-5.2 * dt);
   camera.position.lerp(desired, k);
   lookTarget.lerp(look, 1 - Math.exp(-9 * dt));
 
-  // speed shake + crash shake
-  const sp = clamp(focus.vel.length() / CFG.maxSpeed, 0, 1.3);
+  const sp = clamp(Math.abs(mine.v) / CFG.maxSpeed, 0, 1.3);
   const baseShake = sp > 0.72 ? (sp - 0.72) * 0.05 : 0;
   shakeAmp = Math.max(0, shakeAmp - shakeAmp * 4.2 * dt);
   const amp = shakeAmp + baseShake;
@@ -1175,49 +897,37 @@ function updateCamera(dt) {
     camera.position.y += (Math.random() - 0.5) * amp * 0.6;
     camera.position.z += (Math.random() - 0.5) * amp;
   }
-
   camera.lookAt(lookTarget);
 
-  // speed-reactive FOV (Asphalt-style stretch)
-  const focusNitro = focus.nitroActive ? 6 : 0;
-  const fovTarget = 62 + sp * 13 + focusNitro + (dualView ? sepFovBonus : 0);
+  const fovTarget = 62 + sp * 13 + (mine.n ? 6 : 0) + (dual ? sepFov : 0);
   if (Math.abs(camera.fov - fovTarget) > 0.05) {
     camera.fov = lerp(camera.fov, fovTarget, 1 - Math.exp(-4.5 * dt));
     camera.updateProjectionMatrix();
   }
 }
 
-// off-screen arrow pointing at the rival car
 const _av = new THREE.Vector3(), _cd = new THREE.Vector3();
-function updateArrow() {
+function updateArrow(rival) {
   const el = $('arrow');
-  if (MODE !== 'race' || raceState === 'idle' || !car2.participating) { el.style.display = 'none'; return; }
-  const focus = focusCar();
-  const other = focus === car1 ? car2 : car1;
-  if (!other.visual.group.visible) { el.style.display = 'none'; return; }
-
-  _av.copy(other.pos); _av.y = 1.2;
+  if (!rival || rival.p !== 1 || !latest || latest.state === 'waiting') { el.style.display = 'none'; return; }
+  _av.set(rival.x, 1.2, rival.z);
   const toOther = _av.clone().sub(camera.position);
   camera.getWorldDirection(_cd);
   const inFront = toOther.dot(_cd) > 0;
   _av.project(camera);
   if (inFront && Math.abs(_av.x) < 0.92 && Math.abs(_av.y) < 0.86) { el.style.display = 'none'; return; }
-
   let sx = _av.x, sy = -_av.y;
   if (!inFront) { sx = -sx; sy = -sy; }
   const ang = Math.atan2(sy, sx);
   const W = window.innerWidth / 2 - 56, H = window.innerHeight / 2 - 56;
   const t = Math.min(W / Math.max(1e-6, Math.abs(Math.cos(ang))), H / Math.max(1e-6, Math.abs(Math.sin(ang))));
-  const px = window.innerWidth / 2 + Math.cos(ang) * t * 0.94;
-  const py = window.innerHeight / 2 + Math.sin(ang) * t * 0.94;
-
   el.style.display = 'flex';
-  el.style.left = px + 'px';
-  el.style.top = py + 'px';
+  el.style.left = (window.innerWidth / 2 + Math.cos(ang) * t * 0.94) + 'px';
+  el.style.top = (window.innerHeight / 2 + Math.sin(ang) * t * 0.94) + 'px';
   el.style.transform = `translate(-50%,-50%) rotate(${ang}rad)`;
-  el.classList.toggle('p2', other.slot === 2);
-  el.classList.toggle('p1', other.slot === 1);
-  el.querySelector('.dist').textContent = Math.round(camera.position.distanceTo(other.pos)) + 'm';
+  el.classList.toggle('p2', rival.s === 2);
+  el.classList.toggle('p1', rival.s === 1);
+  el.querySelector('.dist').textContent = Math.round(Math.hypot(rival.x - camera.position.x, rival.z - camera.position.z)) + 'm';
 }
 
 // ---------------------------------------------------------------------------
@@ -1277,68 +987,81 @@ function beep(freq, dur = 0.15, type = 'square', vol = 0.22) {
 function playHorn() { beep(415, 0.35, 'triangle', 0.28); }
 function winJingle() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 0.24, 'triangle', 0.26), i * 150)); }
 
-function updateAudio(dt) {
+function updateAudio(mine, rival) {
   if (!audio) return;
   if (audio.ctx.state === 'suspended') { audio.ctx.resume(); return; }
   const t = audio.ctx.currentTime;
-  const focus = focusCar();
-  [car1, car2].forEach((car, i) => {
+  [mine, rival].forEach((cs, i) => {
     const e = audio.engines[i];
-    const revBase = raceState === 'countdown' ? car.input.throttle * 0.5 : 0;
-    const sp = clamp(Math.max(car.vel.length() / CFG.maxSpeed, revBase), 0, 1);
+    if (!cs || cs.p !== 1) { e.g.gain.setTargetAtTime(0, t, 0.1); return; }
+    const sp = clamp(Math.abs(cs.v) / CFG.maxSpeed, 0, 1);
     const gear = Math.min(4, Math.floor(sp * 5));
     const frac = sp * 5 - gear;
     const rpm = 0.22 + 0.78 * frac;
     const freq = 52 + rpm * 165 + sp * 46;
     e.o1.frequency.setTargetAtTime(freq, t, 0.05);
     e.o2.frequency.setTargetAtTime(freq * 0.5 + 1, t, 0.05);
-    e.lp.frequency.setTargetAtTime(500 + sp * 1600 + car.input.throttle * 900, t, 0.1);
-    let vol = 0.035 + car.input.throttle * 0.13 + sp * 0.05;
-    if (car !== focus) {
-      const dist = camera.position.distanceTo(car.pos);
+    e.lp.frequency.setTargetAtTime(500 + sp * 2200, t, 0.1);
+    let vol = 0.03 + sp * 0.14 + (cs.n ? 0.05 : 0);
+    if (i === 1) {
+      const dist = camera.position.distanceTo(new THREE.Vector3(cs.x, 0, cs.z));
       vol *= clamp(1 - dist / 160, 0, 1) * 0.8;
     }
-    if (!car.visual.group.visible) vol = 0;
     e.g.gain.setTargetAtTime(vol, t, 0.08);
   });
-  const f = focus;
-  const skidAmt = (f.slip > 4.5 && f.vel.length() > 6) ? clamp(f.slip * 0.018, 0, 0.2) : 0;
+  const skidAmt = (mine && mine.sl > 4.5 && Math.abs(mine.v) > 6) ? clamp(mine.sl * 0.018, 0, 0.2) : 0;
   audio.skidGain.gain.setTargetAtTime(skidAmt, t, 0.06);
-  const nitroAmt = (car1.nitroActive || car2.nitroActive) ? 0.12 : 0;
-  audio.nitroGain.gain.setTargetAtTime(nitroAmt, t, 0.08);
+  audio.nitroGain.gain.setTargetAtTime((mine && mine.n) || (rival && rival.n) ? 0.1 : 0, t, 0.08);
+}
+
+// ---------------------------------------------------------------------------
+// Car placement + FX from interpolated state
+// ---------------------------------------------------------------------------
+function placeCar(slot, cs, dt) {
+  const v = carVisuals[slot];
+  if (!cs) return;
+  v.group.visible = cs.p === 1;
+  if (!v.group.visible) return;
+
+  v.group.position.set(cs.x, 0, cs.z);
+  v.group.rotation.y = cs.h;
+
+  v.body.rotation.z = lerp(v.body.rotation.z, clamp(-cs.sl * 0.042, -0.17, 0.17), Math.min(1, dt * 8));
+  const sp = clamp(Math.abs(cs.v) / CFG.maxSpeed, 0, 1);
+  v.body.position.y = Math.sin(performance.now() * 0.016 + slot * 3) * 0.008 * sp;
+
+  v.spinAngle += cs.v * dt / 0.35;
+  for (const w of v.wheels) {
+    w.spin.rotation.x = v.spinAngle;
+    if (w.front) w.pivot.rotation.y = -cs.st * 0.42;
+  }
+
+  // rear-wheel world positions for smoke/skid (local rear wheels at ±0.98, z=-1.45)
+  if (cs.sl > 4.5 && Math.abs(cs.v) > 6) {
+    for (const side of [-0.98, 0.98]) {
+      const wx = cs.x + side * Math.cos(cs.h) - 1.45 * Math.sin(cs.h);
+      const wz = cs.z - side * Math.sin(cs.h) - 1.45 * Math.cos(cs.h);
+      if (Math.random() < 0.5) spawnSmoke(wx, wz, Math.sin(cs.h) * cs.v, Math.cos(cs.h) * cs.v);
+      spawnSkid(wx, wz, cs.h);
+    }
+  }
+  if (cs.n === 1) {
+    for (const sx of [-0.55, 0.55]) {
+      const fx = cs.x + sx * Math.cos(cs.h) - 2.45 * Math.sin(cs.h);
+      const fz = cs.z - sx * Math.sin(cs.h) - 2.45 * Math.cos(cs.h);
+      spawnFlame(new THREE.Vector3(fx, 0.42, fz));
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
 // HUD
 // ---------------------------------------------------------------------------
-function toast(text) {
-  const el = $('toast');
-  el.textContent = text;
-  el.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => el.classList.remove('show'), 2600);
-}
-
-function confetti() {
-  const c = $('confetti');
-  c.innerHTML = '';
-  const colors = ['#ff5252', '#ffd479', '#42a5f5', '#3ddc84', '#ffffff'];
-  for (let i = 0; i < 90; i++) {
-    const p = document.createElement('i');
-    p.style.left = (Math.random() * 100) + 'vw';
-    p.style.background = colors[i % colors.length];
-    p.style.animationDelay = (Math.random() * 0.9) + 's';
-    p.style.animationDuration = (2.2 + Math.random() * 1.8) + 's';
-    c.appendChild(p);
-  }
-  setTimeout(() => { c.innerHTML = ''; }, 6500);
-}
-
 const minimap = $('minimap');
 const mctx = minimap.getContext('2d');
 const MSCALE = 62 / (A + RH + 4);
 
-function drawMinimap() {
+function drawMinimap(mine, rival) {
   const w = minimap.width, h = minimap.height;
   mctx.clearRect(0, 0, w, h);
   mctx.save();
@@ -1357,127 +1080,70 @@ function drawMinimap() {
   mctx.moveTo((A - RH) * MSCALE, 0);
   mctx.lineTo((A + RH) * MSCALE, 0);
   mctx.stroke();
-  for (const car of [car1, car2]) {
-    if (!car.visual.group.visible) continue;
-    mctx.fillStyle = car.slot === 1 ? '#ff5252' : '#42a5f5';
+  for (const cs of [mine, rival]) {
+    if (!cs || cs.p !== 1) continue;
+    mctx.fillStyle = cs.s === 1 ? '#ff5252' : '#42a5f5';
     mctx.beginPath();
-    mctx.arc(car.pos.x * MSCALE, car.pos.z * MSCALE, 3.4, 0, Math.PI * 2);
+    mctx.arc(cs.x * MSCALE, cs.z * MSCALE, 3.4, 0, Math.PI * 2);
     mctx.fill();
   }
   mctx.restore();
 }
 
-function updateHUD() {
-  const car = focusCar();
-  const speed = car.speedKmh();
-  $('speed-val').textContent = Math.round(speed);
-  const fwd = car.vel.dot(new THREE.Vector2(Math.sin(car.heading), Math.cos(car.heading)));
-  $('gear').textContent = fwd < -0.5 ? 'R' : (Math.abs(fwd) < 0.4 && car.input.throttle < 0.05 ? 'N' : 'D');
+function updateHUD(mine, rival) {
+  if (!latest || !mine) return;
+  $('speed-val').textContent = Math.round(Math.abs(mine.v) * 3.6);
+  $('gear').textContent = mine.v < -0.5 ? 'R' : (Math.abs(mine.v) < 0.4 ? 'N' : 'D');
+  $('nitro-fill').style.width = (mine.m || 0) + '%';
+  $('nitro-fill').classList.toggle('burn', mine.n === 1);
 
-  $('nitro-fill').style.width = car.nitro + '%';
-  $('nitro-fill').classList.toggle('burn', car.nitroActive);
-
-  const order = standings();
-  const rank = ordinal(order.indexOf(car) + 1);
+  const order = standingsFrom(latest);
+  const myRank = order.findIndex((c) => c.s === mySlot);
   $('raceinfo').innerHTML =
-    `<span id="lapchip">LAP ${Math.min(car.lap + 1, CFG.totalLaps)}<small>/${CFG.totalLaps}</small></span>` +
-    (participants().length > 1 ? `<span id="poschip" class="${car.slot === 1 ? 'c1' : 'c2'}">${rank.toUpperCase()}</span>` : '');
+    `<span id="lapchip">LAP ${Math.min(mine.lap + 1, CFG.totalLaps)}<small>/${CFG.totalLaps}</small></span>` +
+    (order.length > 1 && myRank >= 0 ? `<span id="poschip" class="${mySlot === 1 ? 'c1' : 'c2'}">${ordinal(myRank + 1).toUpperCase()}</span>` : '');
 
-  const row = (c) => `L${Math.min(c.lap + 1, CFG.totalLaps)}  ${fmtTime(c.lastLap)}  <span class="dim">best ${fmtTime(c.best)}</span>`;
-  $('lap-p1').innerHTML = `<b style="color:#ff6b6b">P1</b> ${row(car1)}`;
-  if (MODE === 'race') {
+  const row = (c) => `L${Math.min(c.lap + 1, CFG.totalLaps)}  ${c.ll != null ? fmtTime(c.ll) : '--:--.--'}  <span class="dim">best ${c.best != null ? fmtTime(c.best) : '--:--.--'}</span>`;
+  $('lap-p1').innerHTML = `<b style="color:#ff6b6b">P1</b> ${row(latest.cars[0])}`;
+  if (latest.mode === 'race') {
     $('lap-p2').style.display = '';
-    $('lap-p2').innerHTML = `<b style="color:#64b5f6">P2</b> ${car2.participating ? row(car2) : '<span class="dim">waiting…</span>'}`;
+    $('lap-p2').innerHTML = `<b style="color:#64b5f6">P2</b> ${latest.cars[1].p === 1 ? row(latest.cars[1]) : '<span class="dim">waiting…</span>'}`;
   } else {
     $('lap-p2').style.display = 'none';
   }
 
-  $('speedlines').style.opacity = clamp((speed / 3.6 - 26) / 34, 0, 0.6);
-
-  drawMinimap();
+  $('speedlines').style.opacity = clamp((Math.abs(mine.v) - 26) / 34, 0, 0.6);
+  drawMinimap(mine, rival);
 }
 
-function updateModeLabels() {
-  const pill1 = $('pill-p1'), pill2 = $('pill-p2');
-  if (MODE === 'coop') {
-    pill1.querySelector('span').textContent = 'CO-DRIVER 1';
-    pill2.querySelector('span').textContent = 'CO-DRIVER 2';
-  } else {
-    pill1.querySelector('span').textContent = 'PLAYER 1';
-    pill2.querySelector('span').textContent = 'PLAYER 2';
+// synced countdown numbers (server-driven float)
+function updateCountdownVisual() {
+  if (!latest || latest.state !== 'countdown' || latest.count == null) return;
+  const n = Math.max(1, Math.ceil(latest.count));
+  if (n !== lastCountInt) {
+    lastCountInt = n;
+    showCount(String(n));
+    beep(392, 0.14, 'square', 0.24);
   }
 }
 
 // ---------------------------------------------------------------------------
-// Overlay / QR / start
+// Lobby buttons
 // ---------------------------------------------------------------------------
-function drawQR() {
-  const url = location.origin + '/controller';
-  try {
-    const qr = qrcode(0, 'M');
-    qr.addData(url);
-    qr.make();
-    const n = qr.getModuleCount();
-    const canvas = $('qr-canvas');
-    const px = Math.floor(196 / n);
-    const size = px * n;
-    canvas.width = canvas.height = size + px * 4;
-    const g = canvas.getContext('2d');
-    g.fillStyle = '#ffffff';
-    g.fillRect(0, 0, canvas.width, canvas.height);
-    g.fillStyle = '#101014';
-    for (let r = 0; r < n; r++) {
-      for (let c = 0; c < n; c++) {
-        if (qr.isDark(r, c)) g.fillRect((c + 2) * px, (r + 2) * px, px, px);
-      }
-    }
-    $('ctrl-url').textContent = url;
-  } catch (e) {
-    $('ctrl-url').textContent = url;
-  }
-}
-
-function setMode(mode) {
-  MODE = mode;
-  document.querySelectorAll('.mode-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.mode === mode);
-  });
-  car2.visual.group.visible = (mode === 'race');
-  $('mode-desc').textContent = mode === 'race'
-    ? `Each phone drives its own car — first to finish ${CFG.totalLaps} laps wins!`
-    : 'One shared car: both phones steer & work the pedals together (inputs merge — works with 1 phone too).';
-  updateModeLabels();
-}
-
-let started = false;
-function startGame() {
-  ensureAudio();
-  $('overlay').classList.add('hidden');
-  started = true;
-  rematch();
-}
-
-$('start-btn').addEventListener('click', startGame);
-$('rematch-btn').addEventListener('click', rematch);
-$('menu-btn').addEventListener('click', () => {
-  $('results').classList.add('hidden');
-  raceState = 'idle';
-  $('overlay').classList.remove('hidden');
-});
+$('start-btn').addEventListener('click', () => { ensureAudio(); net.send({ type: 'start' }); });
+$('rematch-btn').addEventListener('click', () => { $('results').classList.add('hidden'); net.send({ type: 'start' }); });
+$('menu-btn').addEventListener('click', () => { $('results').classList.add('hidden'); net.send({ type: 'reset' }); });
 document.querySelectorAll('.mode-btn').forEach((b) => {
-  b.addEventListener('click', () => setMode(b.dataset.mode));
+  b.addEventListener('click', () => net.send({ type: 'mode', mode: b.dataset.mode }));
 });
-$('qr-open').addEventListener('click', () => window.open(location.origin + '/controller', '_blank'));
-
+$('copy-code').addEventListener('click', () => { copyText($('room-code').textContent); toast('Room code copied!'); });
+$('copy-game-link').addEventListener('click', () => { copyText($('game-link').textContent); toast('Game link copied — send it to your friend!'); });
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 window.addEventListener('pointerdown', ensureAudio, { passive: true });
-
-drawQR();
-setMode('race');
 
 // ---------------------------------------------------------------------------
 // Main loop
@@ -1486,21 +1152,22 @@ const clock = new THREE.Clock();
 
 function frame() {
   requestAnimationFrame(frame);
-  let dt = clock.getDelta();
-  dt = Math.min(dt, 0.05);
-  if (started && raceState !== 'idle') raceTime += dt;
+  const dt = Math.min(clock.getDelta(), 0.05);
 
-  if (raceState === 'countdown') updateCountdown(dt);
+  const mine = interpState(mySlot);
+  const rival = interpState(mySlot === 1 ? 2 : 1);
 
-  applyInputs();
-  car1.update(dt, raceTime);
-  if (MODE === 'race') car2.update(dt, raceTime);
+  if (latest && latest.state === 'countdown') updateCountdownVisual();
+
+  placeCar(1, interpState(1), dt);
+  placeCar(2, interpState(2), dt);
   updateParticles(dt);
-  updateCamera(dt);
-  updateArrow();
-  updateAudio(dt);
-  updateHUD();
-  if (raceState === 'racing') maybeShowResults();
+  updateCamera(dt, mine, rival);
+  updateArrow(rival);
+  updateAudio(mine, rival);
+  updateHUD(mine, rival);
+  maybeSendKeyboard(dt);
+
   renderer.render(scene, camera);
 }
 frame();
