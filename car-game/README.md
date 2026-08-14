@@ -31,15 +31,27 @@ sound synthesized in code, and a tiny Node.js relay server
 
    | Mode | Description |
    |------|-------------|
-   | 🏁 **2 Cars — Race** | Each phone drives its own car around the circuit. |
-   | 🤝 **1 Car — Co-op** | One car, two drivers: P1 steers, P2 works the pedals. |
+   | 🏁 **2 Cars — Race** | Each phone drives its own car — **first to finish 3 laps wins**, with a 3‑2‑1‑GO countdown, live standings, winner banner + podium results. |
+   | 🤝 **1 Car — Co-op** | One car, two drivers: P1 steers, P2 works the pedals. Beat your best 3‑lap time. |
 
 ### Controls
 
 | Who | Input |
 |-----|-------|
-| Laptop keyboard | `W A S D` / arrows drive P1 · `Space` handbrake · `C` camera · `R` reset · `M` mode · `H` help |
-| Phone (per player) | **Left stick** steer · **Right stick** gas/brake · **DRIFT** handbrake · **CAM / RESET / HORN** buttons |
+| Laptop keyboard | `W A S D` / arrows drive P1 · `Shift` **nitro 🔥** · `Space` drift · `C` camera · `R` reset · `M` mode · `H` help |
+| Phone (per player) | **Left stick** steer · **Right stick** gas/brake · **🔥 NITRO** boost · **DRIFT** handbrake · **CAM / RST / HORN** buttons |
+
+### Race features
+
+- 3‑2‑1‑GO countdown with engine revving on the grid
+- Nitro boost (regenerating meter) with exhaust flames + FOV kick
+- Asphalt-style feel: speed-based FOV stretch, camera shake, drift smoke,
+  persistent skid marks, sparks on impact, speed-line overlay, hit flash
+- Broadcast-style camera that zooms out to keep **both cars in frame**,
+  plus an edge-of-screen arrow pointing at the rival car
+- FINISH gantry, final-lap alert, winner banner with confetti 🎉,
+  podium results screen with total time + best lap, instant **REMATCH**
+- Phones show live speed, nitro meter, position, and race banners (GO!, winner…)
 
 The phones show live speed + lap telemetry, support fullscreen + landscape
 lock (⛶), vibration, and wake-lock. Up to two phones connect at once; slots

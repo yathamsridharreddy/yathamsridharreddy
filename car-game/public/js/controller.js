@@ -4,6 +4,7 @@
    VELOCITY RUSH — phone controller
    Turns the phone into a dual-stick wireless joystick.
    Left stick  = steering     Right stick = throttle / brake
+   NITRO + DRIFT hold buttons, live telemetry & race banners.
    ============================================================ */
 
 const $ = (id) => document.getElementById(id);
@@ -11,7 +12,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const dz = (v) => (Math.abs(v) < 0.07 ? 0 : v);
 
 const state = {
-  steer: 0, throttle: 0, brake: 0, hb: false,
+  steer: 0, throttle: 0, brake: 0, hb: false, nitro: false,
   slot: null, full: false
 };
 
@@ -81,6 +82,7 @@ function holdButton(id, down, up) {
 }
 
 holdButton('btn-hb', () => { state.hb = true; }, () => { state.hb = false; });
+holdButton('btn-nitro', () => { state.nitro = true; vibrate(25); }, () => { state.nitro = false; });
 holdButton('btn-cam', () => net.send({ type: 'button', action: 'cam', pressed: true }));
 holdButton('btn-reset', () => net.send({ type: 'button', action: 'reset', pressed: true }));
 holdButton('btn-horn', () => net.send({ type: 'button', action: 'horn', pressed: true }));
@@ -93,6 +95,17 @@ const statusEl = $('status');
 function setStatus(text, cls) {
   statusEl.textContent = text;
   statusEl.className = 'pill ' + cls;
+}
+
+let lastBanner = '';
+function showBanner(text) {
+  const el = $('phone-banner');
+  el.textContent = text;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(showBanner._t);
+  showBanner._t = setTimeout(() => el.classList.remove('show'), 3200);
 }
 
 const net = new NetLink('controller', {
@@ -114,11 +127,20 @@ const net = new NetLink('controller', {
     if (msg.type === 'telemetry' && msg.data) {
       const d = msg.data;
       $('speed-val').textContent = d.speed;
+      $('nitro-fill').style.width = (d.nitro || 0) + '%';
       const lapBits = [];
-      if (d.mode === 'race') lapBits.push(`Lap ${d.lap + 1}`);
+      if (d.mode === 'race') lapBits.push(`Lap ${d.lap || ''}`);
+      if (d.rank && d.mode === 'race') lapBits.push(d.rank);
       if (d.lastLap) lapBits.push(`Last ${d.lastLap}`);
       if (d.best) lapBits.push(`Best ${d.best}`);
       $('lap-info').textContent = lapBits.join('  ·  ');
+      if (d.state === 'countdown') setStatus('Get ready…', 'wait');
+      else setStatus(`Connected · Player ${state.slot}${d.rank ? ' · ' + d.rank : ''}`, 'ok');
+      if (d.banner && d.banner !== lastBanner) {
+        lastBanner = d.banner;
+        showBanner(d.banner);
+        vibrate(40);
+      }
       return;
     }
     if (msg.type === 'pong') return;
@@ -140,7 +162,8 @@ setInterval(() => {
     steer: dz(state.steer),
     throttle: dz(state.throttle),
     brake: dz(state.brake),
-    handbrake: state.hb
+    handbrake: state.hb,
+    nitro: state.nitro
   });
 }, 33);
 
@@ -148,8 +171,8 @@ setInterval(() => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     state.steer = state.throttle = state.brake = 0;
-    state.hb = false;
-    net.send({ type: 'input', steer: 0, throttle: 0, brake: 0, handbrake: false });
+    state.hb = state.nitro = false;
+    net.send({ type: 'input', steer: 0, throttle: 0, brake: 0, handbrake: false, nitro: false });
   }
 });
 
@@ -158,23 +181,18 @@ document.addEventListener('visibilitychange', () => {
 // ---------------------------------------------------------------------------
 $('btn-full').addEventListener('click', async () => {
   vibrate(10);
-  try {
-    await document.documentElement.requestFullscreen();
-  } catch (e) {}
+  try { await document.documentElement.requestFullscreen(); } catch (e) {}
   try {
     if (screen.orientation && screen.orientation.lock) {
       await screen.orientation.lock('landscape');
     }
   } catch (e) {}
-  try {
-    if (navigator.wakeLock) await navigator.wakeLock.request('screen');
-  } catch (e) {}
+  try { if (navigator.wakeLock) await navigator.wakeLock.request('screen'); } catch (e) {}
 });
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('touchmove', (e) => { if (e.scale !== 1) e.preventDefault(); }, { passive: false });
 
-// orientation hint
 function checkOrientation() {
   $('rotate-hint').classList.toggle('show', window.innerHeight > window.innerWidth);
 }

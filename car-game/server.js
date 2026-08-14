@@ -129,7 +129,8 @@ function handleClientMessage(client, msg) {
       if (client.role === 'controller' && client.slot) {
         broadcastToRole('screen', { type: msg.type, slot: client.slot,
           steer: msg.steer, throttle: msg.throttle, brake: msg.brake,
-          handbrake: !!msg.handbrake, action: msg.action, pressed: msg.pressed });
+          handbrake: !!msg.handbrake, nitro: !!msg.nitro,
+          action: msg.action, pressed: msg.pressed });
       }
       break;
     case 'telemetry':

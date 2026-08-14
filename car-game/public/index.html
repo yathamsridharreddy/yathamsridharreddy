@@ -10,6 +10,11 @@
 <body>
   <div id="stage"></div>
 
+  <!-- cinematic overlays -->
+  <div id="vignette"></div>
+  <div id="speedlines"></div>
+  <div id="hitflash"></div>
+
   <!-- HUD -->
   <div id="hud">
     <div id="pills">
@@ -17,11 +22,14 @@
       <div class="pill" id="pill-p2"><i></i><span>PLAYER 2</span></div>
     </div>
 
+    <div id="raceinfo"></div>
+
     <canvas id="minimap" width="150" height="150"></canvas>
 
     <div id="speedo">
       <div id="speed-val">0</div>
       <div id="speed-sub"><span>km/h</span><span id="gear">N</span></div>
+      <div id="nitro-wrap"><div id="nitro-fill"></div><label>NITRO</label></div>
     </div>
 
     <div id="laps">
@@ -29,23 +37,48 @@
       <div id="lap-p2"></div>
     </div>
 
+    <div id="arrow" style="display:none">
+      <svg width="34" height="26" viewBox="0 0 34 26"><path d="M2 13 L22 13 M14 4 L24 13 L14 22" stroke="currentColor" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="dist"></span>
+    </div>
+
     <div id="toast"></div>
   </div>
 
+  <!-- countdown -->
+  <div id="countdown"><span id="count-num"></span></div>
+
+  <!-- winner / event banner -->
+  <div id="banner"><div id="banner-text"></div></div>
+
+  <div id="confetti"></div>
+
   <div id="net-banner" class="hidden">⚠ Connection to server lost — retrying…</div>
+
+  <!-- race results -->
+  <div id="results" class="hidden">
+    <div id="results-card">
+      <h2 id="results-title">🏁 RACE RESULTS</h2>
+      <div id="results-rows"></div>
+      <div class="results-btns">
+        <button id="rematch-btn">🔁 REMATCH</button>
+        <button id="menu-btn" class="ghost">MENU</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Start overlay -->
   <div id="overlay">
     <div id="overlay-card">
       <h1>VELOCITY <span>RUSH</span></h1>
-      <p class="tagline">3D street racing — your phones are the joysticks</p>
+      <p class="tagline">3D street racing — your phones are the joysticks · first to 3 laps wins 🏁</p>
 
       <div class="cols">
         <div class="col">
           <h2>🖥️ On this laptop</h2>
           <ul class="keys">
             <li><b>W A S D</b> / arrows — drive (Player 1)</li>
-            <li><b>Space</b> — handbrake / drift</li>
+            <li><b>Shift</b> — nitro 🔥 &nbsp;·&nbsp; <b>Space</b> — drift</li>
             <li><b>C</b> — camera &nbsp;·&nbsp; <b>R</b> — reset car</li>
             <li><b>M</b> — switch mode &nbsp;·&nbsp; <b>H</b> — this help</li>
           </ul>
@@ -64,13 +97,13 @@
       </div>
 
       <div class="modes">
-        <button class="mode-btn active" data-mode="race">🏁 2 CARS — RACE<em>Each phone drives its own car</em></button>
+        <button class="mode-btn active" data-mode="race">🏁 2 CARS — RACE<em>Each phone drives its own car · 3 laps</em></button>
         <button class="mode-btn" data-mode="coop">🤝 1 CAR — CO-OP<em>P1 steers · P2 works the pedals</em></button>
       </div>
-      <p id="mode-desc">Each phone drives its own car. Race your friend!</p>
+      <p id="mode-desc">Each phone drives its own car — first to finish 3 laps wins!</p>
 
       <button id="start-btn">START ENGINE</button>
-      <p class="foot">Tip: use the <b>⛶</b> button on the phones for fullscreen + landscape lock.</p>
+      <p class="foot">3‑2‑1‑GO countdown · nitro boost 🔥 · drift smoke · live standings on the phones · ⛶ on phones for fullscreen</p>
     </div>
   </div>
 

@@ -22,10 +22,10 @@ body[data-player="p2"] { --accent: #42a5f5; }
   flex-shrink: 0;
 }
 .pill {
-  font-size: 11.5px; font-weight: 700; letter-spacing: .8px;
-  padding: 6px 13px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .6px;
+  padding: 6px 12px; border-radius: 999px;
   border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.06);
-  max-width: 44vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 40vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .pill.ok   { color: #6ee7a0; border-color: rgba(110,231,160,.5); }
 .pill.wait { color: #ffd479; border-color: rgba(255,212,121,.45); }
@@ -33,8 +33,19 @@ body[data-player="p2"] { --accent: #42a5f5; }
 
 #telemetry { text-align: center; line-height: 1.05; }
 #speed { font-weight: 800; font-variant-numeric: tabular-nums; }
-#speed #speed-val { font-size: 34px; color: var(--accent); text-shadow: 0 0 18px var(--accent); }
+#speed #speed-val { font-size: 32px; color: var(--accent); text-shadow: 0 0 18px var(--accent); }
 #speed small { font-size: 12px; color: #8fa2b8; margin-left: 4px; font-weight: 600; }
+#nitro-wrap {
+  width: 150px; height: 7px; margin: 4px auto 2px;
+  background: rgba(255,255,255,.09); border-radius: 5px; overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+}
+#nitro-fill {
+  height: 100%; width: 100%; border-radius: 5px;
+  background: linear-gradient(90deg, #2478ff, #35d0ff);
+  box-shadow: 0 0 10px rgba(53, 208, 255, .55);
+  transition: width .15s linear;
+}
 #lap-info { font-size: 10.5px; color: #8fa2b8; letter-spacing: .5px; min-height: 13px; }
 
 #top-right { display: flex; align-items: center; gap: 8px; }
@@ -66,7 +77,7 @@ button.tool {
 .stick-zone.active { border-color: var(--accent); background: rgba(255,255,255,.05); }
 
 .stick-base {
-  width: 128px; height: 128px; border-radius: 50%;
+  width: 122px; height: 122px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,.2);
   background: radial-gradient(circle at 50% 42%, rgba(255,255,255,.09), rgba(255,255,255,.02));
   display: flex; align-items: center; justify-content: center;
@@ -75,7 +86,7 @@ button.tool {
 .stick-zone.active .stick-base { border-color: var(--accent); }
 
 .stick-knob {
-  width: 58px; height: 58px; border-radius: 50%;
+  width: 56px; height: 56px; border-radius: 50%;
   background: radial-gradient(circle at 34% 28%, #f2f5f9, #9aa7b8 58%, #5b6675);
   box-shadow: 0 6px 16px rgba(0,0,0,.55), inset 0 -3px 8px rgba(0,0,0,.3);
   will-change: transform;
@@ -85,31 +96,50 @@ button.tool {
 }
 
 .stick-label {
-  position: absolute; bottom: 9px; left: 0; right: 0;
-  text-align: center; font-size: 10.5px; font-weight: 800;
-  letter-spacing: 2.4px; color: #6d7d92; pointer-events: none;
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  text-align: center; font-size: 10px; font-weight: 800;
+  letter-spacing: 2.2px; color: #6d7d92; pointer-events: none;
 }
 
 /* ---------- buttons ---------- */
 #buttons {
   display: flex; flex-direction: column; justify-content: center;
-  gap: 10px; width: 92px; flex-shrink: 0;
+  gap: 8px; width: 104px; flex-shrink: 0;
 }
 .btn {
-  height: 56px; border-radius: 16px; border: 1px solid rgba(255,255,255,.2);
+  height: 48px; border-radius: 14px; border: 1px solid rgba(255,255,255,.2);
   background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.03));
-  color: #e8ecf2; font-size: 12px; font-weight: 900; letter-spacing: 1.6px;
+  color: #e8ecf2; font-size: 11px; font-weight: 900; letter-spacing: 1.2px;
   cursor: pointer; touch-action: none;
   transition: transform .06s;
 }
+.btn.nitro {
+  border-color: rgba(53, 208, 255, .65); color: #7fe0ff; font-size: 12px;
+  background: radial-gradient(circle at 50% 30%, rgba(53,208,255,.3), rgba(36,120,255,.1));
+  box-shadow: 0 0 14px rgba(53, 208, 255, .25);
+}
+.btn.nitro.pressed { background: #35d0ff; color: #06202e; box-shadow: 0 0 26px rgba(53,208,255,.8); }
 .btn.big {
-  height: 84px; border-radius: 50%;
+  height: 72px; border-radius: 36px;
   border-color: rgba(255,82,82,.65);
   color: #ff8a8a; font-size: 13px;
   background: radial-gradient(circle at 50% 32%, rgba(255,82,82,.28), rgba(255,82,82,.08));
 }
-.btn.pressed { transform: scale(.94); background: var(--accent); color: #0a0d13; border-color: var(--accent); }
 .btn.big.pressed { background: #ff5252; color: #fff; }
+.btn-row { display: flex; gap: 6px; }
+.btn.sm { flex: 1; height: 42px; font-size: 9.5px; letter-spacing: .8px; border-radius: 11px; }
+.btn.pressed { transform: scale(.94); background: var(--accent); color: #0a0d13; border-color: var(--accent); }
+
+/* ---------- race banners on phone ---------- */
+#phone-banner {
+  position: fixed; top: 34%; left: 50%; z-index: 50;
+  transform: translate(-50%, -50%) scale(.8);
+  font-size: 30px; font-weight: 900; font-style: italic; letter-spacing: 1px;
+  color: #ffd479; text-shadow: 0 0 26px rgba(255,170,50,.8), 0 3px 12px rgba(0,0,0,.6);
+  white-space: nowrap; opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+#phone-banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
 /* ---------- notes ---------- */
 #full-note {

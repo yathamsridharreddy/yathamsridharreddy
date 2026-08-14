@@ -15,6 +15,7 @@
     <div id="status" class="pill wait">Connecting…</div>
     <div id="telemetry">
       <div id="speed"><span id="speed-val">0</span><small>km/h</small></div>
+      <div id="nitro-wrap"><div id="nitro-fill"></div></div>
       <div id="lap-info"></div>
     </div>
     <div id="top-right">
@@ -30,10 +31,13 @@
     </div>
 
     <div id="buttons">
+      <button id="btn-nitro" class="btn nitro">🔥 NITRO</button>
       <button id="btn-hb" class="btn big">DRIFT</button>
-      <button id="btn-cam" class="btn">CAM</button>
-      <button id="btn-reset" class="btn">RESET</button>
-      <button id="btn-horn" class="btn">HORN</button>
+      <div class="btn-row">
+        <button id="btn-cam" class="btn sm">CAM</button>
+        <button id="btn-reset" class="btn sm">RST</button>
+        <button id="btn-horn" class="btn sm">HORN</button>
+      </div>
     </div>
 
     <div class="stick-zone" id="zone-right">
@@ -41,6 +45,8 @@
       <div class="stick-label">▲ GAS · BRAKE ▼</div>
     </div>
   </div>
+
+  <div id="phone-banner"></div>
 
   <div id="full-note" style="display:none">
     <p>😕 Both joystick slots are taken (2 phones max).</p>
