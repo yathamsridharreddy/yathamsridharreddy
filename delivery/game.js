@@ -913,7 +913,7 @@ function buildCarCards() {
     const b = document.createElement('button');
     b.className = 'car-card' + (hex === prefs.color ? ' active' : '');
     b.dataset.color = hex;
-    b.innerHTML = `<img src="${url}" alt="car"/><div class="mc-name">${nm.e} ${nm.n}</div>`;
+    b.innerHTML = `<img src="${url}" alt="car"/><div class="mc-name">${nm.n}</div>`;
     b.addEventListener('click', () => {
       prefs.color = hex; savePrefs();
       wrap.querySelectorAll('.car-card').forEach((x) => x.classList.remove('active'));
