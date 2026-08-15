@@ -132,3 +132,13 @@ Vercel alone cannot host the relay because serverless functions do not maintain 
 ## License & credits
 
 Created by **Sridhar** as a study in realtime multiplayer game engineering. Rendering by [three.js](https://threejs.org); inspired by the *Forza Horizon*, *CarX* and *The Crew* franchises.
+
+---
+
+## What's new in v2
+
+- **Driver identity** — choose your racer name, car colour and car class (Velocity / Accelerator / Grip) in the lobby; shown on the HUD, results and leaderboards.
+- **Persistent leaderboards** — top lap times per circuit, stored server-side and shown in the lobby.
+- **AI opponent** — race a bot when you're solo.
+- **Race setup** — 1 / 3 / 5 lap formats.
+- **Live quality-of-life** — ping/latency badge, FPS meter, graphics quality presets (Low/Med/High), audio mute + music, and a share-results button.
