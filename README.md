@@ -12,7 +12,7 @@
   <a href="https://www.linkedin.com/in/yatham-sridhar-reddy-744177374/" target="_blank">
     <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
   </a>
-  <a href="https://yathamsridharreddy.github.io/sridhar-portfolio" target="_blank">
+  <a href="https://yathamsridharreddy.vercel.app" target="_blank">
     <img src="https://img.shields.io/badge/Portfolio-00E5FF?style=for-the-badge&logo=google-chrome&logoColor=black" alt="Portfolio" />
   </a>
   <a href="mailto:yathamsridharreddy99@gmail.com">
