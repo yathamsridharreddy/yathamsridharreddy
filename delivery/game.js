@@ -886,14 +886,6 @@ function wireLobbyV2() {
     nameEl.addEventListener('input', () => { prefs.name = nameEl.value.trim(); savePrefs(); sendMeta(); });
   }
   buildCarCards();
-  document.querySelectorAll('.map-card').forEach((b) => {
-    b.classList.toggle('active', parseInt(b.dataset.map, 10) === selectedMap);
-    b.addEventListener('click', () => {
-      selectedMap = parseInt(b.dataset.map, 10);
-      document.querySelectorAll('.map-card').forEach((x) => x.classList.toggle('active', x === b));
-      net.send({ type: 'map', map: selectedMap });
-    });
-  });
   // two-page lobby navigation
   const p1 = $('page1'), p2 = $('page2');
   const nb = $('next-btn'), bb = $('back-btn');
@@ -1607,6 +1599,11 @@ function updateCountdownVisual() {
 $('start-btn').addEventListener('click', () => { ensureAudio(); net.send({ type: 'start' }); });
 $('rematch-btn').addEventListener('click', () => { $('results').classList.add('hidden'); net.send({ type: 'start' }); });
 $('menu-btn').addEventListener('click', () => { $('results').classList.add('hidden'); net.send({ type: 'reset' }); });
+document.querySelectorAll('.map-card').forEach((b) => b.addEventListener('click', () => {
+  selectedMap = parseInt(b.dataset.map, 10);
+  document.querySelectorAll('.map-card').forEach((x) => x.classList.toggle('active', x === b));
+  net.send({ type: 'map', map: selectedMap });
+}));
 document.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => {
   const m = b.dataset.mode;
   viewMode = m;
