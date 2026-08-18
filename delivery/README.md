@@ -20,9 +20,11 @@ Built on **three.js** for rendering and a **Node.js WebSocket simulation server*
 | Capability | Description |
 |---|---|
 | **Real-time multiplayer** | Authoritative 30 Hz server simulation; every client interpolates the same state, guaranteeing a consistent race across machines. |
-| **Phone-as-controller** | A mobile web page with two virtual joysticks, nitro, handbrake and telemetry — connected over WebSocket by scanning a QR code. |
+| **Phone-as-controller** | A mobile web page with two virtual joysticks, gyro steering, nitro, handbrake and telemetry — connected over WebSocket by scanning a QR code. |
 | **Room-based sessions** | Private 5-character room codes and shareable invite links; up to two drivers per room. |
-| **Three environments** | Distinct circuits with independent geometry and art direction: *Highland Rush* (day), *Neon City* (night), *Island Motorfest* (sunset). |
+| **Five environments** | Distinct circuits with independent geometry and art direction: *Highland Rush* (day), *Neon City* (night), *Island Motorfest* (sunset), *Canyon Chicane* (desert), *Hairpin GP* (snow). |
+| **Five game modes** | Rival Rush (head-to-head), Solo Rush (co-op), Local Duel (split-screen), Elimination, and Drift Score. |
+| **Solid collision world** | Guard-rail barriers, tire-stack obstacles and car-vs-car bumping that all physically stop the cars. |
 | **Arcade handling model** | Nitro boost, drift/handbrake slip, lateral grip, off-road drag, and collision response. |
 | **Race management** | Countdown start, lap validation, best-lap tracking, final-lap call, and an automated results podium. |
 
@@ -50,7 +52,7 @@ Laptop A (viewer) ◀──────┤  Simulation       ├─────�
 | Map | Theme | Lighting | Character |
 |---|---|---|---|
 | **Highland Rush** | Open countryside | Clear midday | Flowing ellipse, pine forest, mountain backdrop |
-| **Neon City** | Dense metropolis | Night, neon signage | Tighter circuit, illuminated towers and floodlights |
+| **Neon City** | Dense metropolis | Night, neon signage | Wavy circuit through illuminated towers |
 | **Island Motorfest** | Tropical coast | Golden-hour sunset | Wide, fast layout over a turquoise lagoon with an active volcano |
 
 Each environment carries its own track dimensions, sky, fog, sun, and prop set, selected in the lobby before the race begins.
@@ -134,6 +136,13 @@ Vercel alone cannot host the relay because serverless functions do not maintain 
 Created by **Sridhar** as a study in realtime multiplayer game engineering. Rendering by [three.js](https://threejs.org); inspired by the *Forza Horizon*, *CarX* and *The Crew* franchises.
 
 ---
+
+## What's new in v2.1
+
+- **Solid obstacles** — tire stacks, guard rails, walls and other cars all physically stop the car; no more driving through anything. Guard rails and walls now sit exactly where the physics barrier is, so cars scrape them instead of clipping through.
+- **Car-vs-car bumping** — Asphalt-style body contact; two cars can no longer overlap.
+- **Stable cars** — server-side steering dead-zone plus adaptive client smoothing eliminate shaking on straight sections, even on bursty mobile-hotspot connections.
+- **Express 5 fix** — `/js/game-core.js` served correctly again (it 404'd under Express 5, which could leave a blank screen on the Node server).
 
 ## What's new in v2
 
