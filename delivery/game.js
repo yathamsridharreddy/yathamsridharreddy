@@ -291,18 +291,15 @@ function ribbonBetween(a, b, y, mat) {
   worldGroup.add(m); return m;
 }
 // instanced props (curbs/walls/rails) placed at exact ray distance `off`
-function instancedAlongRay(radiusAt, geo, mat, off, stepLen, y, scaleY) {
-  // approximate perimeter from the mean radius so segment count stays right
-  let rSum = 0; const S = 64;
-  for (let i = 0; i < S; i++) rSum += radiusAt((i / S) * PI2);
-  const per = (rSum / S + off) * PI2;
+function instancedAlongRay(geo, mat, off, stepLen, y, scaleY) {
+  const per = Math.PI * (3 * (A + B) - Math.sqrt((3 * A + B) * (A + 3 * B)));
   const N = Math.max(24, Math.round(per / stepLen));
   const inst = new THREE.InstancedMesh(geo, mat, N);
   for (let i = 0; i < N; i++) {
     const th = (i / N) * PI2;
-    const r = radiusAt(th) + off;
+    const r = rayRadius(th) + off;
     const dth = 0.002;
-    const r2 = radiusAt(th + dth) + off;
+    const r2 = rayRadius(th + dth) + off;
     const tx = r2 * Math.cos(th + dth) - r * Math.cos(th);
     const tz = r2 * Math.sin(th + dth) - r * Math.sin(th);
     _iq.setFromAxisAngle(_iup, Math.atan2(tx, tz));
@@ -323,34 +320,12 @@ function buildSplineVisuals(map, T) {
   const lineMat = new THREE.MeshStandardMaterial({ color: 0xe8e8e2, roughness: 0.8 });
   ribbonBetween(curve(RH - 0.88), curve(RH - 0.52), 0.045, lineMat);
   ribbonBetween(curve(-(RH - 0.52)), curve(-(RH - 0.88)), 0.045, lineMat);
-  // red/white striped barrier wall — ONE barrier per side, exactly at the
-  // physics body limit (inner face at RH+2.5), replacing the old silver fence
-  const bGeo = new THREE.BoxGeometry(0.5, 0.55, 2.6);
-  const bRed = new THREE.MeshStandardMaterial({ color: 0xc9302c, roughness: 0.55 });
-  const bWhite = new THREE.MeshStandardMaterial({ color: 0xefefea, roughness: 0.55 });
-  for (const off of [RH + 2.75, -RH - 2.75]) {
-    let rSum = 0; const S = 64;
-    for (let i = 0; i < S; i++) rSum += map.centerR((i / S) * PI2);
-    const per = (rSum / S + off) * PI2;
-    const N = Math.round(per / 2.6);
-    const ir = new THREE.InstancedMesh(bGeo, bRed, Math.ceil(N / 2));
-    const iw = new THREE.InstancedMesh(bGeo, bWhite, Math.floor(N / 2));
-    let ri = 0, wi = 0;
-    for (let i = 0; i < N; i++) {
-      const th = (i / N) * PI2;
-      const r = map.centerR(th) + off;
-      const dth = 0.002;
-      const r2 = map.centerR(th + dth) + off;
-      const tx = r2 * Math.cos(th + dth) - r * Math.cos(th);
-      const tz = r2 * Math.sin(th + dth) - r * Math.sin(th);
-      _iq.setFromAxisAngle(_iup, Math.atan2(tx, tz));
-      _im.compose(new THREE.Vector3(Math.cos(th) * r, 0.275, Math.sin(th) * r), _iq, new THREE.Vector3(1, 1, 1));
-      if (i % 2 === 0) ir.setMatrixAt(ri++, _im); else iw.setMatrixAt(wi++, _im);
-    }
-    ir.castShadow = iw.castShadow = true;
-    ir.receiveShadow = iw.receiveShadow = true;
-    worldGroup.add(ir, iw);
-  }
+  // guard-rail fence exactly at the physics body limit (nose/tail barrier)
+  const fenceMat = new THREE.MeshStandardMaterial({ color: 0xcfd6dd, metalness: 0.6, roughness: 0.4 });
+  ribbonBetween(curve(RH + 2.38), curve(RH + 2.62), 0.34, fenceMat);
+  ribbonBetween(curve(-(RH + 2.62)), curve(-(RH + 2.38)), 0.34, fenceMat);
+  ribbonBetween(curve(RH + 2.4), curve(RH + 2.6), 0.78, fenceMat);
+  ribbonBetween(curve(-(RH + 2.6)), curve(-(RH + 2.4)), 0.78, fenceMat);
   const cl = map.points;
   const p0 = cl[0], p1 = cl[1];
   const yaw = Math.atan2(p1.x - p0.x, p1.z - p0.z);
@@ -613,8 +588,8 @@ function buildWorld(map) {
     const railMat = new THREE.MeshStandardMaterial({ color: T.night ? 0x39d5ff : 0xc9302c, roughness: 0.6 });
     // wall inner face at RH+3.35 = exactly where the car's side stops
     for (const off of [RH + 3.6, -RH - 3.6]) {
-      instancedAlongRay(rayRadius, wallGeo, wallMat, off, 2.6, 0.5);
-      instancedAlongRay(rayRadius, railGeo, railMat, off, 2.6, 1.02);
+      instancedAlongRay(wallGeo, wallMat, off, 2.6, 0.5);
+      instancedAlongRay(railGeo, railMat, off, 2.6, 1.02);
     }
   }
 
