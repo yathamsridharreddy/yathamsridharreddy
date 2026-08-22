@@ -331,12 +331,14 @@ setInterval(() => {
 }, TICK_MS);
 
 app.get('/health', (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
   res.json({ ok: true, rooms: rooms.size, tickHz: core.CFG.tickHz });
 });
 // build marker — lets you verify at a glance that frontend + server run the
 // SAME version (version drift between them causes "ghost" physics bugs)
 app.get('/version', (req, res) => {
-  res.json({ build: 'v25', tickHz: core.CFG.tickHz, geom: core.GEOM_ID });
+  res.set('Access-Control-Allow-Origin', '*');
+  res.json({ build: 'v26', tickHz: core.CFG.tickHz, geom: core.GEOM_ID });
 });
 
 server.listen(PORT, '0.0.0.0', () => {
