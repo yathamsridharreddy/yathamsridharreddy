@@ -1,129 +1,119 @@
-# <div align="center">Hi there, I'm Yatham Sridhar Reddy! 👋</div>
-
 <div align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=24&pause=1000&color=00F7FF&center=true&vCenter=true&width=650&lines=Cloud+%26+DevOps+Engineer;AWS+Certified+Developer+%7C+OCI+Architect;Building+Scalable+Cloud+Infrastructure+%26+CI%2FCD;400%2B+DSA+%26+Competitive+Programming+Problems+Solved" alt="Typing SVG" />
-</div>
-
-<p align="center">
-  <b>Cloud & DevOps focused Computer Science Engineering student (B.Tech '27)</b> seeking an internship in AWS-based infrastructure, cloud automation, and reliability engineering. Experienced in designing, deploying, and containerizing production-grade cloud applications using AWS, Docker, and CI/CD pipelines. Strong in Python backend development, Linux server administration, and algorithmic problem-solving.
-</p>
-
-<div align="center">
-  <a href="https://www.linkedin.com/in/yatham-sridhar-reddy-744177374/" target="_blank">
-    <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" />
-  </a>
-  <a href="https://yathamsridharreddy.github.io/sridhar-portfolio" target="_blank">
-    <img src="https://img.shields.io/badge/Portfolio-00E5FF?style=for-the-badge&logo=google-chrome&logoColor=black" alt="Portfolio" />
-  </a>
-  <a href="mailto:yathamsridharreddy99@gmail.com">
-    <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" />
-  </a>
-  <a href="tel:+917207580938">
-    <img src="https://img.shields.io/badge/Phone-%2B91%207207580938-25D366?style=for-the-badge&logo=phone&logoColor=white" alt="Phone" />
-  </a>
+  <img src="delivery/img/logo.png" width="120" alt="Sridhar Rush logo"/>
+  <h1>SRIDHAR RUSH 🏎️</h1>
+  <p><b>Online 3D racing for the browser — your phone is the joystick.</b><br/>
+  Scan a QR code, join from your phone, and race a friend across the internet. No installs, no accounts needed to play.</p>
+  <p>
+    <a href="https://sridhar-drift.vercel.app"><img src="https://img.shields.io/badge/PLAY-LIVE-00F7FF?style=for-the-badge" alt="Play live"/></a>
+    <img src="https://img.shields.io/badge/build-v50-3ddc84?style=for-the-badge" alt="build v50"/>
+    <img src="https://img.shields.io/badge/three.js-r128-35e0ff?style=for-the-badge" alt="three.js"/>
+    <img src="https://img.shields.io/badge/server-30Hz%20authoritative-ff2038?style=for-the-badge" alt="server"/>
+  </p>
+  <img src="delivery/img/poster.png" width="520" alt="Sridhar Rush poster"/>
 </div>
 
 ---
 
-## 🏆 Coding Profiles & Problem Solving
+## ✨ What is this?
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" width="220">
-        <a href="https://leetcode.com/u/yathamsridharreddy/" target="_blank">
-          <img src="https://img.shields.io/badge/LeetCode-FFA116?style=for-the-badge&logo=leetcode&logoColor=black" alt="LeetCode" /><br/>
-          <b>100+ Problems Solved</b><br/>
-          <sub>Data Structures & Algorithms</sub>
-        </a>
-      </td>
-      <td align="center" width="220">
-        <a href="https://www.codechef.com/users/yathamsridharr" target="_blank">
-          <img src="https://img.shields.io/badge/CodeChef-5B4638?style=for-the-badge&logo=codechef&logoColor=white" alt="CodeChef" /><br/>
-          <b>300+ Problems Solved</b><br/>
-          <sub>Competitive Programming</sub>
-        </a>
-      </td>
-      <td align="center" width="220">
-        <a href="https://www.hackerrank.com/profile/yathamsridhar" target="_blank">
-          <img src="https://img.shields.io/badge/HackerRank-00EA64?style=for-the-badge&logo=hackerrank&logoColor=white" alt="HackerRank" /><br/>
-          <b>Verified Profile</b><br/>
-          <sub>Python & SQL Proficiency</sub>
-        </a>
-      </td>
-    </tr>
-  </table>
-  <p><b>⚡ Total Impact: 400+ Algorithmic & DSA Problems Solved Across Platforms</b></p>
-</div>
+A **server-authoritative multiplayer racing game** that runs entirely in the browser:
 
----
+- 💻 **Laptops** render the synced 3D race (three.js, neon bloom, 5 themed circuits)
+- 📱 **1–2 phones** become wireless joysticks over WebSocket (scan a QR)
+- 🌍 Race a friend across the internet, or a ROOKIE/PRO AI, split-screen, co-op, elimination & drift modes
 
-## 📜 Professional Certifications
+## 🎮 Feature highlights
 
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" width="280">
-        <img src="https://img.shields.io/badge/AWS-Academy_Cloud_Developer-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white" alt="AWS Certified" /><br/>
-        <b>AWS Academy Graduate</b><br/>
-        <sub>Cloud Developing & AWS Infrastructure</sub><br/>
-        <sub><i>Amazon Web Services</i></sub>
-      </td>
-      <td align="center" width="280">
-        <img src="https://img.shields.io/badge/Oracle-OCI_Architect_Associate-F80000?style=for-the-badge&logo=oracle&logoColor=white" alt="OCI Architect" /><br/>
-        <b>Oracle Cloud Infrastructure</b><br/>
-        <sub>Architect Associate Certification</sub><br/>
-        <sub><i>Oracle</i></sub>
-      </td>
-      <td align="center" width="280">
-        <img src="https://img.shields.io/badge/Certiport-HTML_%26_CSS_Specialist-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML CSS Certified" /><br/>
-        <b>IT Specialist Certification</b><br/>
-        <sub>HTML & CSS Web Fundamentals</sub><br/>
-        <sub><i>Certiport / Pearson</i></sub>
-      </td>
-    </tr>
-  </table>
-</div>
+| Area | Ships with |
+|---|---|
+| **Racing** | 5 circuits × 5 modes · drift scoring · nitro · ghost replay · ROOKIE/PRO AI · matchmaking |
+| **Multiplayer** | Phone-as-joystick (QR) · cross-laptop rooms · haptics on the phone pad · low-bandwidth mode |
+| **Progression** | Email accounts (Supabase) · global + daily + weekly *Founders Cup* leaderboards · 🔥 streaks · 5 achievements |
+| **Social** | WhatsApp/Telegram invites · *race-my-ghost* links · 🎥 watchable replay page · 📸 photo-finish share · QR poster kit |
+| **Product** | Installable PWA (offline lobby) · EN / తెలుగు / हिंदी lobby · colorblind + reduced-motion modes · auto smoothness ladder |
+| **Ops** | `/stats` analytics + remote crash beacons (no cookies, no IPs) · `/health` `/version` · CSP + security headers |
 
----
+## 🕹️ Controls
 
-## 🛠️ Technical Skills & Cloud Stack
+| Input | How |
+|---|---|
+| 📱 Phone | Left stick = steer · right stick = gas/brake · NITRO button · gyro steer option |
+| ⌨️ Keyboard | WASD drive · Shift nitro · Space drift · C camera |
 
-```mermaid
-graph LR
-    User[👤 Yatham Sridhar Reddy] --> Cloud[☁️ Cloud & AWS]
-    User --> DevOps[🚀 DevOps & CI/CD]
-    User --> Code[💻 Programming & APIs]
-    User --> DB[🗄️ Databases & Storage]
+## 🧠 Architecture
 
-    Cloud --> AWS["AWS: EC2, S3, RDS, Lambda, VPC, IAM"]
-    Cloud --> OCI["Oracle Cloud OCI Architect"]
-
-    DevOps --> Docker["Docker Containerization"]
-    DevOps --> CICD["GitHub Actions & Jenkins CI/CD"]
-    DevOps --> IaC["Terraform & Ansible"]
-
-    Code --> Py["Python, Flask & FastAPI"]
-    Code --> Java["Java, C/C++, SQL"]
-    Code --> Web["HTML5 & CSS3"]
-
-    DB --> MySQL["MySQL & AWS RDS"]
-    DB --> Rel["Relational Modeling & Optimization"]
-
-    style User fill:#1f6feb,stroke:#58a6ff,stroke-width:2px,color:#fff
-    style Cloud fill:#238636,stroke:#2ea043,stroke-width:2px,color:#fff
-    style DevOps fill:#9e6a03,stroke:#f0883e,stroke-width:2px,color:#fff
-    style Code fill:#6e40c9,stroke:#bc8cff,stroke-width:2px,color:#fff
-    style DB fill:#b62324,stroke:#ff6a69,stroke-width:2px,color:#fff
+```
+ phones (WebSocket input) ─┐
+                           ├─▶ Node relay (30 Hz authoritative sim, interpolation hints)
+ laptops (render clients) ─┘        │
+      │                            ├─▶ in-memory + file leaderboards
+      ├─ three.js scene, bloom, adaptive resolution
+      └─ Supabase (optional): accounts, global leaderboard, shared ghosts
+ Frontend: Vercel static · Relay: Railway/Render · DB: Supabase (free tier)
 ```
 
+The sim is **server-authoritative**; laptops interpolate snapshots, so cheating a client only cheats yourself.
+
+## 🗂️ Repository layout
+
+Game source lives flat in [`delivery/`](delivery/) and maps to the deploy repo like this:
+
+| `delivery/` | deploy target |
+|---|---|
+| `game-core.js` | `shared/game-core.js` (deterministic physics, copied to `public/js/` at build) |
+| `game.js` / `net.js` / `account.js` / `i18n.js` / `replay.js` | `public/js/…` |
+| `controller.js` | `public/js/controller.js` (phone pad) |
+| `index.html` / `controller.html` / `replay.html` | `public/…` |
+| `style.css` / `controller.css` | `public/css/…` |
+| `sw.js`, manifests, `img/` | `public/…` |
+| `server.js`, `vercel.json`, `render.yaml`, `package.json` | repo root |
+| `supabase-setup.sql` | run once in the Supabase SQL editor |
+
+## 🏃 Run locally
+
+```bash
+cd delivery
+npm install
+node server.js          # http://localhost:3000  (game + relay same origin)
+```
+
+Open `http://localhost:3000` on a laptop, scan the QR with a phone on the same network.
+
+## ☁️ Deploy
+
+1. **Vercel** → static frontend (`vercel.json` handles build + rewrites + headers)
+2. **Railway/Render** → `node server.js` (`render.yaml` included)
+3. Env vars (all optional — every feature degrades gracefully without them):
+
+| Var | Where | Purpose |
+|---|---|---|
+| `SERVER_URL` | Vercel | public URL of the relay |
+| `SUPABASE_URL`, `SUPABASE_ANON` | Vercel | accounts + global boards in browser |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE` | Relay | server-side writes (boards, ghosts) |
+| `COMMUNITY_WA`, `COMMUNITY_DC` | Vercel | lobby community buttons |
+| `LOW_BANDWIDTH=1` | Relay | lean tick/telemetry rates for weak networks |
+
+## 📊 Ops endpoints (relay)
+
+`/version` · `/health` · `/lb?map=N[&daily=1]` · `/daily` · `/cup` · `/recent` · `/stats` · `POST /a` (beacons) · `GET/POST /ghost`
+
+## 🧪 Quality & testing
+
+Every release is gated by a node test harness: ghost replay (19), lazy-bloom pipeline (8), service worker routing (8+15), haptics (7), analytics/crash beacons (7), alive-lobby (11), ghost-links (5), bot difficulty differential, achievements (8), streaks, i18n parity, and live race smoke tests — plus a 15 s network-cadence probe (30 Hz, ±0.5 ms jitter).
+
+## 🗺️ Built so far (v29 → v50)
+
+Collision rebuild for splined tracks · matchmaking · accounts-lite → Supabase · a11y pass · ghost replay + share + spectator · PWA + offline · haptics · analytics + crash beacons · daily/cup/streaks · EN/TE/HI · ROOKIE bot · brand kit (logo, posters, og cards) · photo-finish · auto smoothness ladder.
+
 ---
 
-## 🎮 Fun Side Project — Velocity Rush (Online Multiplayer)
+## 👤 About the author
 
-A 3D browser racing game where **phones become wireless joysticks** — race a
-friend across the internet: two laptops stay perfectly in sync while each
-phone acts as a dual-stick controller. Built with three.js, WebAudio, and a
-server-authoritative Node.js simulation.
+**Yatham Sridhar Reddy** — Cloud & DevOps focused CSE undergrad (B.Tech '27) · AWS Certified Developer · OCI Architect · 400+ DSA problems.
+This repo doubles as my GitHub profile — the game above is my favourite build.
 
-➡️ **[MULTIPLAYER-CAR-GAME](https://github.com/yathamsridharreddy/MULTIPLAYER-CAR-GAME)** — deploy-ready for Vercel + Render
+<p>
+  <a href="https://www.linkedin.com/in/yatham-sridhar-reddy-744177374/"><img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn"/></a>
+  <a href="https://yathamsridharreddy.github.io/sridhar-portfolio"><img src="https://img.shields.io/badge/Portfolio-00E5FF?style=for-the-badge&logo=google-chrome&logoColor=black" alt="Portfolio"/></a>
+  <a href="mailto:yathamsridharreddy99@gmail.com"><img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" alt="Email"/></a>
+</p>
