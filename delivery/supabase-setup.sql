@@ -23,3 +23,20 @@ create policy "lb read" on public.leaderboard
 -- writes happen only through the server's service-role key
 
 create index if not exists lb_map_time on public.leaderboard (map, time_ms);
+
+-- ----------------------------------------------------------------------------
+-- v41: shareable ghosts ("race my ghost" links)
+-- ----------------------------------------------------------------------------
+create table if not exists public.ghosts (
+  id         text primary key,
+  map        int  not null,
+  name       text not null,
+  data       jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.ghosts enable row level security;
+
+-- anyone may load a shared ghost; writes only via the server's service role
+create policy "ghost read" on public.ghosts
+  for select using (true);
