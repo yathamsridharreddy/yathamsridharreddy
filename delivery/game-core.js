@@ -782,7 +782,7 @@
         const L = Math.sqrt(len2);
         const tx = ax / L, tz = az / L;
         const lat = tx * (z - qz) - tz * (x - qx);
-        out = { d2, lat, cx: qx, cz: qz, tx, tz, idx: i, along: (i + t) / N };
+        out = { d2, d: Math.sqrt(d2), lat, cx: qx, cz: qz, tx, tz, idx: i, along: (i + t) / N };
       }
     }
     return out;
@@ -847,7 +847,7 @@
     let speed = this.vx * dirX + this.vy * dirY;
     const near = T.nearest ? T.nearest(this.x, this.z) : splineNearest(T, this.x, this.z, this._nearIdx);
     if (!T.nearest) this._nearIdx = near.idx;
-    const offroad = Math.abs(near.lat) > (T.type === 'spline' ? 6.35 : RH + 0.7); // v56: drag begins when wheels cross the white line
+    const offroad = (T.type === 'spline' ? near.d : Math.abs(near.lat)) > 6.35 ? true : (T.type !== 'spline' && Math.abs(near.lat) > RH + 0.7); // v56: drag begins when wheels cross the white line
     if (held) { this.vx = 0; this.vy = 0; this.slip = 0; }
     this.nitroActive = !!(inp.nitro && this.nitroMeter > 0 && inp.throttle > 0.1 && !this.finished);
     if (this.nitroActive) this.nitroMeter = Math.max(0, this.nitroMeter - CFG.nitroDrain * dt);
@@ -967,10 +967,10 @@
     // v67 AUTHORITATIVE BOUNDARY SPEC — one source of truth on the track object.
     // roadHalf = asphalt half-width; limC = max car-center lateral;
     // limP = max nose/tail reach; fenceOff = visible fence inner face == limP.
-    track.roadHalf = RH;
-    track.limC = 7.6;
-    track.limP = 9.6;
-    track.fenceOff = 9.6;
+    track.roadHalf = RH;   // 8.0 asphalt half-width (visual road)
+    track.limC = 8.4;      // max car-CENTER lateral: 0.4 m onto shoulder, NO wall inside road
+    track.limP = 10.0;     // max nose/tail reach
+    track.fenceOff = 10.0; // visible fence inner face === physical nose limit
     // physics uses the SAME perpendicular-to-centerline metric the visuals are
     // drawn with (no more ray-vs-normal drift = no invisible walls on curves)
     track.nearest = (x, z) => splineNearest(track, x, z, null);
@@ -1008,7 +1008,7 @@
     const latOf = (px, pz) => {
       if (spline) {
         const n = T.nearest ? T.nearest(px, pz) : splineNearest(T, px, pz, null);
-        return n.lat;
+        return n.d; // v67: TRUE perpendicular distance = same metric as road/fence draw
       }
       return ellipseProj(px, pz, T.a, T.b).lat;
     };
@@ -1056,6 +1056,28 @@
         }
       }
     }
+    // v67 exact final projection (spline maps only; Map 0 keeps its exact
+    // historical 3-pass behavior): removes residual overshoot for center AND
+    // nose/tail probes so the authoritative position is provably inside limits
+    if (spline) {
+      // iterate per-probe exact corrections until converged (each push moves
+      // the other probes); residual < 0.1 mm, no tolerance needed downstream
+      for (let it = 0; it < 6; it++) {
+        let worst = 0;
+        for (const pr of [[0, limC], [PROBE_NOSE, limP], [PROBE_TAIL, limP]]) {
+          const px = car.x + dirX * pr[0], pz = car.z + dirY * pr[0];
+          const n = T.nearest(px, pz);
+          const over = n.d - pr[1];
+          if (over > worst) worst = over;
+          if (over > 0) {
+            const nx = px - n.cx, nz = pz - n.cz;
+            const cd = Math.hypot(nx, nz) || 1;
+            car.x -= (nx / cd) * over; car.z -= (nz / cd) * over;
+          }
+        }
+        if (worst <= 1e-5) break;
+      }
+    }
     return crash;
   }
 
@@ -1099,7 +1121,7 @@
   // browser caches an old game-core, its drawn track won't match the server's
   // car positions; the client detects this via /version.geom and forces reload.
   const GEOM_ID = (function () {
-    const s = JSON.stringify(MAPS.map((m) => ({ i: m.id, t: m.theme, a: m.a, b: m.b, y: m.type || 'e', c: m.world.colliders.length, h: m.world.hazards.length, k: 4, p: 3 }))); // k = barrier gen (v67 track-owned boundary), p = powerups (v59)
+    const s = JSON.stringify(MAPS.map((m) => ({ i: m.id, t: m.theme, a: m.a, b: m.b, y: m.type || 'e', c: m.world.colliders.length, h: m.world.hazards.length, k: 4, p: 3, L: m.limC || 0 }))); // k=barrier gen, p=powerups, L=boundary spec (v67)
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36);
