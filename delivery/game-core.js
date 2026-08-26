@@ -964,6 +964,13 @@
     for (let i = 0; i < samples; i++) { const th = i / samples * PI2; const r = centerR(th); points.push({ x: Math.cos(th) * r, z: Math.sin(th) * r }); }
     let mx = 0, mz = 0; points.forEach((p) => { mx = Math.max(mx, Math.abs(p.x)); mz = Math.max(mz, Math.abs(p.z)); });
     const track = { type: 'spline', points, a: mx, b: mz, centerR, radial: true };
+    // v67 AUTHORITATIVE BOUNDARY SPEC — one source of truth on the track object.
+    // roadHalf = asphalt half-width; limC = max car-center lateral;
+    // limP = max nose/tail reach; fenceOff = visible fence inner face == limP.
+    track.roadHalf = RH;
+    track.limC = 7.6;
+    track.limP = 9.6;
+    track.fenceOff = 9.6;
     // physics uses the SAME perpendicular-to-centerline metric the visuals are
     // drawn with (no more ray-vs-normal drift = no invisible walls on curves)
     track.nearest = (x, z) => splineNearest(track, x, z, null);
@@ -995,8 +1002,8 @@
     const T = car.track;
     if (!T) return null;
     const spline = T.type === 'spline';
-    const limC = spline ? 6.3 : RH + 2.4;  // v56: center limit = white-line corridor (7.3) minus half body (0.95)
-    const limP = spline ? 7.3 : RH + 3.35;  // v56: nose/tail stop exactly at the white curb line
+    const limC = spline ? T.limC : RH + 2.4; // v67 track-owned spec  // v56: center limit = white-line corridor (7.3) minus half body (0.95)
+    const limP = spline ? T.limP : RH + 3.35;  // v56: nose/tail stop exactly at the white curb line
     const dirX = Math.sin(car.heading), dirY = Math.cos(car.heading);
     const latOf = (px, pz) => {
       if (spline) {
@@ -1092,7 +1099,7 @@
   // browser caches an old game-core, its drawn track won't match the server's
   // car positions; the client detects this via /version.geom and forces reload.
   const GEOM_ID = (function () {
-    const s = JSON.stringify(MAPS.map((m) => ({ i: m.id, t: m.theme, a: m.a, b: m.b, y: m.type || 'e', c: m.world.colliders.length, h: m.world.hazards.length, k: 3, p: 3 }))); // k = barrier gen (v56), p = powerups (v59)
+    const s = JSON.stringify(MAPS.map((m) => ({ i: m.id, t: m.theme, a: m.a, b: m.b, y: m.type || 'e', c: m.world.colliders.length, h: m.world.hazards.length, k: 4, p: 3 }))); // k = barrier gen (v67 track-owned boundary), p = powerups (v59)
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
     return (h >>> 0).toString(36);
