@@ -232,7 +232,9 @@ begin
   return json_build_object('ok', true, 'coins', v_coins - p_amount);
 end $$;
 
--- v77 BUG-007: recipient can accept/decline; stale opens expire client-side
+-- v78 BUG-007: friend challenges (to_uid) + recipient accept/decline; expiry client-side
+alter table public.challenges add column if not exists to_uid uuid references auth.users(id) on delete cascade;
+create index if not exists ch_to on public.challenges (to_uid, status);
 create policy "ch answer" on public.challenges for update
-  using (auth.uid() in (select to_uid from public.challenges c2 where c2.id = challenges.id))
+  using (auth.uid() = to_uid)
   with check (status in ('accepted', 'declined'));
