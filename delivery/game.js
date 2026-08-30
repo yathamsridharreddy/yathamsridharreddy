@@ -2461,6 +2461,12 @@ const BUILD = 'v76';
       // A build-tag difference alone just means some newer features are absent
       // on one side; the race itself is safe, so don't nag with a banner.
       const geomMismatch = v && v.geom && CORE.GEOM_ID && v.geom !== CORE.GEOM_ID;
+      // v77 BUG-011: cosmetic-only deploys — reload idle tabs on BUILD mismatch (once per build)
+      if (!geomMismatch && v && v.build && v.build !== BUILD && !sessionStorage.getItem('sr_br_' + v.build) && (!latest || latest.state === 'waiting')) {
+        sessionStorage.setItem('sr_br_' + v.build, '1');
+        location.replace(location.pathname + '?r=' + Date.now());
+        return;
+      }
       if (geomMismatch) {
         const key = 'sr_reload_' + (v.build || 'x');
         if (!sessionStorage.getItem(key)) {
