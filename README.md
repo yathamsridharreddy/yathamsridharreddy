@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/hero.svg" width="100%" alt="Yatham Sridhar Reddy — Cloud, DevOps, Backend & Full Stack" />
+  <img src="./assets/hero.svg" width="100%" alt="Yatham Sridhar Reddy" />
 </p>
 
 <p align="center">
@@ -15,16 +15,16 @@
 </p>
 
 <p align="center">
-  <sub>Cloud infrastructure • DevOps automation • Backend systems • Full Stack engineering</sub>
+  Cloud Infrastructure • DevOps Automation • Backend Systems • Full Stack Engineering
 </p>
 
 ---
 
-## ⚡ About
+## 👨‍💻 About Me
 
 I'm **Yatham Sridhar Reddy**, a Computer Science Engineering student focused on **Cloud/DevOps, Backend Development, and Full Stack Engineering**.
 
-I like building systems end-to-end — from application code and APIs to containers, CI/CD pipelines, cloud infrastructure, and deployment.
+I enjoy building systems end-to-end — from application code and APIs to containers, CI/CD pipelines, cloud infrastructure, and deployment.
 
 - 🎓 B.Tech Computer Science Engineering — 2027
 - ☁️ Cloud & DevOps focused
@@ -36,32 +36,53 @@ I like building systems end-to-end — from application code and APIs to contain
 
 ---
 
-## 🧰 Stack
+## 🧰 Tech Stack
+
+### Cloud & DevOps
 
 <p align="center">
-  <img src="https://skillicons.dev/icons?i=aws,oracle,docker,linux,githubactions,jenkins,terraform,ansible,python,java,cpp,c,js,html,css,flask,fastapi,mysql,postgres,supabase,git,github" />
+  <img src="https://skillicons.dev/icons?i=aws,oracle,docker,linux,githubactions,jenkins,terraform,ansible" />
+</p>
+
+### Programming & Backend
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=python,java,cpp,c,js,flask,fastapi" />
+</p>
+
+### Web & Databases
+
+<p align="center">
+  <img src="https://skillicons.dev/icons?i=html,css,js,mysql,postgres,supabase,git,github" />
 </p>
 
 ---
 
-## 🚀 Selected Work
+# 🚀 Featured Projects
 
 ### 🏎️ Sridhar Rush
+
 **Real-time multiplayer 3D browser racing**
 
 A multiplayer racing experience with phone-as-controller support, real-time WebSockets, Three.js rendering, server-authoritative simulation, AI opponents, progression, leaderboards and PWA support.
 
 `JavaScript` `Three.js` `Node.js` `Express` `WebSockets`
 
-<p>
-  <a href="https://sridhar-drift.vercel.app">▶ Live Demo</a> ·
-  <a href="https://github.com/yathamsridharreddy/MULTIPLAYER-CAR-GAME">Source Code</a>
+<p align="center">
+  <a href="https://sridhar-drift.vercel.app">
+    ▶️ Live Demo
+  </a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="https://github.com/yathamsridharreddy/MULTIPLAYER-CAR-GAME">
+    💻 Source Code
+  </a>
 </p>
 
 ---
 
 ### ☁️ Cloud Compare AI
-**AI + cloud engineering**
+
+**AI + Cloud Engineering**
 
 An AI-focused cloud project combining application development with practical cloud comparison and decision-support concepts.
 
@@ -70,9 +91,10 @@ An AI-focused cloud project combining application development with practical clo
 ---
 
 ### ☁️ CloudSmiths
-**Cloud engineering & automation**
 
-A cloud-focused project centered on practical infrastructure, automation, deployment, and modern cloud application engineering.
+**Cloud Engineering & Automation**
+
+A cloud-focused project centered around practical infrastructure, automation, deployment, and modern cloud application engineering.
 
 `Cloud` `DevOps` `AWS` `Automation` `Backend`
 
@@ -82,12 +104,8 @@ A cloud-focused project centered on practical infrastructure, automation, deploy
 
 <p align="center">
   <img src="https://img.shields.io/badge/400%2B-DSA%20Problems-00F7FF?style=for-the-badge" />
-  <a href="https://leetcode.com/u/yathamsridharreddy/">
-    <img src="https://img.shields.io/badge/LeetCode-100%2B-FFA116?style=for-the-badge&logo=leetcode&logoColor=black" />
-  </a>
-  <a href="https://www.codechef.com/users/yathamsridharr">
-    <img src="https://img.shields.io/badge/CodeChef-300%2B-5B4638?style=for-the-badge&logo=codechef&logoColor=white" />
-  </a>
+  <img src="https://img.shields.io/badge/LeetCode-100%2B-FFA116?style=for-the-badge&logo=leetcode&logoColor=black" />
+  <img src="https://img.shields.io/badge/CodeChef-300%2B-5B4638?style=for-the-badge&logo=codechef&logoColor=white" />
 </p>
 
 ---
@@ -102,7 +120,7 @@ A cloud-focused project centered on practical infrastructure, automation, deploy
 
 ---
 
-## 📊 GitHub
+## 📊 GitHub Analytics
 
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=yathamsridharreddy&show_icons=true&theme=github_dark&hide_border=true&rank_icon=github&include_all_commits=true" height="180" />
@@ -111,14 +129,6 @@ A cloud-focused project centered on practical infrastructure, automation, deploy
 
 <p align="center">
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=yathamsridharreddy&theme=github-dark-blue&hide_border=true" width="70%" />
-</p>
-
----
-
-## 🐍 Contribution Activity
-
-<p align="center">
-  <img src="./assets/github-contribution-grid-snake-dark.svg" alt="GitHub contribution snake animation" width="90%" />
 </p>
 
 ---
@@ -135,22 +145,3 @@ Containers & CI/CD
 Automation & Observability
        ↓
 Reliable Production Systems
-```
-
-**AWS • DevOps • CI/CD • Docker • Terraform • Linux • Networking • Backend • Cloud Security • Reliability**
-
----
-
-## 📫 Connect
-
-<p align="center">
-  <a href="https://yathamsridharreddy.vercel.app">🌐 Portfolio</a>
-  &nbsp;•&nbsp;
-  <a href="https://www.linkedin.com/in/yatham-sridhar-reddy-744177374/">LinkedIn</a>
-  &nbsp;•&nbsp;
-  <a href="mailto:yathamsridharreddy99@gmail.com">Email</a>
-</p>
-
-<p align="center">
-  <b>Build • Automate • Deploy • Scale</b>
-</p>
