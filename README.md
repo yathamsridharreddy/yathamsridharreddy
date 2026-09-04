@@ -195,9 +195,9 @@ A cloud-focused project centered around practical infrastructure, automation, de
 
 <p align="center">
   <img
-    src="https://github-readme-activity-graph.vercel.app/graph?username=yathamsridharreddy&bg_color=0D1117&color=58A6FF&line=00F7FF&point=FFFFFF&area=true&hide_border=true"
+    src="./profile/github-activity.svg"
     width="100%"
-    alt="GitHub Activity Graph"
+    alt="GitHub Development Activity"
   />
 </p>
 
