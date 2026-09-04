@@ -38,19 +38,19 @@ I enjoy building systems end-to-end — from application code and APIs to contai
 
 ## 🧰 Tech Stack
 
-### Cloud & DevOps
+### ☁️ Cloud & DevOps
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=aws,oracle,docker,linux,githubactions,jenkins,terraform,ansible" />
 </p>
 
-### Programming & Backend
+### 💻 Programming & Backend
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=python,java,cpp,c,js,flask,fastapi" />
 </p>
 
-### Web & Databases
+### 🌐 Web & Databases
 
 <p align="center">
   <img src="https://skillicons.dev/icons?i=html,css,js,mysql,postgres,supabase,git,github" />
@@ -123,12 +123,29 @@ A cloud-focused project centered around practical infrastructure, automation, de
 ## 📊 GitHub Analytics
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=yathamsridharreddy&show_icons=true&theme=github_dark&hide_border=true&rank_icon=github&include_all_commits=true" height="180" />
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=yathamsridharreddy&layout=compact&theme=github_dark&hide_border=true" height="180" />
+  <img src="./profile/github-metrics.svg" width="100%" alt="GitHub Analytics" />
 </p>
 
+---
+
+## 🐍 Contribution Activity
+
 <p align="center">
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=yathamsridharreddy&theme=github-dark-blue&hide_border=true" width="70%" />
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="./assets/github-contribution-grid-snake-dark.svg"
+    />
+    <source
+      media="(prefers-color-scheme: light)"
+      srcset="./assets/github-contribution-grid-snake.svg"
+    />
+    <img
+      src="./assets/github-contribution-grid-snake-dark.svg"
+      width="100%"
+      alt="GitHub Contribution Snake"
+    />
+  </picture>
 </p>
 
 ---
