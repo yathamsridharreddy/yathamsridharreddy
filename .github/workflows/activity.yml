@@ -1,0 +1,45 @@
+name: Update GitHub Activity Graph
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */12 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  activity:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate GitHub Activity Graph
+        uses: maurodesouza/github-readme-activity-graph-action@v1
+        with:
+          username: yathamsridharreddy
+          output_path: profile/github-activity.svg
+          token: ${{ secrets.GITHUB_TOKEN }}
+          options: >-
+            bg_color=0D1117
+            &color=58A6FF
+            &line=00F7FF
+            &point=FFFFFF
+            &area=true
+            &hide_border=true
+            &custom_title=GitHub%20Development%20Activity
+            &height=300
+            &days=31
+
+      - name: Commit generated activity graph
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add profile/github-activity.svg
+
+          git diff --cached --quiet || git commit -m "chore: update GitHub activity graph"
+
+          git push
